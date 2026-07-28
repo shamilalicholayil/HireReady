@@ -44,6 +44,11 @@ const sessionSchema = new mongoose.Schema(
     finishTime: {
       type: Date,
     },
+    status: {
+      type: String,
+      enum: ["in-progress", "completed", "abandoned"],
+      default: "in-progress",
+    },
   },
   { timestamps: true },
 );

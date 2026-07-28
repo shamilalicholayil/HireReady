@@ -156,6 +156,7 @@ const finishSession = catchAsync(async (req, res, next) => {
   session.weaknesses = report.weaknesses;
   session.improvementSuggestions = report.improvementSuggestions;
   session.finishTime = new Date();
+  session.status = "completed";
   await session.save();
 
   res.status(200).json({ success: true, session });
