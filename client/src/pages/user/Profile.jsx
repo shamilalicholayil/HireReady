@@ -1,15 +1,23 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { getProfile, updateProfile, uploadAvatar } from "../../api/profileApi";
+import { toast } from "sonner";
+
+import {
+  getProfile,
+  updateProfile,
+  uploadAvatar,
+  downloadResume,
+} from "../../api/profileApi";
 import Card from "../../components/common/Card";
 import { Camera, FileText } from "lucide-react";
-import { useDispatch } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { updateUser } from "../../features/auth/authSlice";
 
 const GENDER_OPTIONS = ["male", "female"];
 
 export default function Profile() {
   const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.auth);
 
   const [form, setForm] = useState({
     name: "",
@@ -100,6 +108,20 @@ export default function Profile() {
       setSaving(false);
     }
   };
+
+  async function handleDownloadResume() {
+    try {
+      const res = await downloadResume(user._id);
+      const blobUrl = URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = "resume.pdf";
+      a.click();
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      toast.error("Couldn't download resume.");
+    }
+  }
 
   const inputClass =
     "w-full bg-[var(--surface-alt)] border border-[var(--border)] text-[var(--text-primary)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--primary)]";
@@ -290,14 +312,12 @@ export default function Profile() {
               </span>
               <div className="flex items-center gap-3 shrink-0 ml-2">
                 {resumeUrl && (
-                  <a
-                    href={resumeUrl}
-                    target="_blank"
-                    rel="noreferrer"
+                  <button
+                    onClick={handleDownloadResume}
                     className="text-xs font-medium text-[var(--primary)]"
                   >
-                    View
-                  </a>
+                    Download
+                  </button>
                 )}
                 <Link
                   to="/profile/resume"

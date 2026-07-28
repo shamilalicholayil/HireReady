@@ -1,6 +1,7 @@
 const streamifier = require("streamifier");
 const pdfParse = require("pdf-parse");
 
+const streamFileDownload = require("../utils/streamFileDownload");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/AppError");
 const {
@@ -183,6 +184,27 @@ const reapplyHR = catchAsync(async (req, res, next) => {
   });
 });
 
+const downloadResume = catchAsync(async (req, res, next) => {
+  const { userId } = req.params;
+  const requester = req.user;
+
+  const targetUser = await User.findById(userId);
+  if (!targetUser) return next(new AppError("User not found", 404));
+  if (!targetUser.resumeUrl)
+    return next(new AppError("No resume uploaded", 404));
+
+  const isOwner = targetUser._id.toString() === requester._id.toString();
+  const isAuthorized =
+    isOwner || requester.role === "hr" || requester.role === "admin";
+  if (!isAuthorized) return next(new AppError("Not authorized", 403));
+
+  await streamFileDownload(
+    res,
+    targetUser.resumeUrl,
+    `resume-${targetUser.name}.pdf`,
+  );
+});
+
 module.exports = {
   getProfile,
   updateProfile,
@@ -190,4 +212,5 @@ module.exports = {
   uploadResume,
   uploadHRDocument,
   reapplyHR,
+  downloadResume,
 };

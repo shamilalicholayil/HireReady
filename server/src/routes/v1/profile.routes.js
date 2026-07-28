@@ -11,6 +11,7 @@ const {
   uploadResume,
   uploadHRDocument,
   reapplyHR,
+  downloadResume,
 } = require("../../controllers/profileController");
 
 const validate = require("../../middlewares/validate.middleware");
@@ -25,5 +26,6 @@ router.put("/me/avatar", upload.single("avatar"), uploadAvatar);
 router.post("/me/resume", resume.single("resume"), uploadResume);
 router.post("/me/hr-document", resume.single("document"), uploadHRDocument);
 router.patch("/me/reapply-hr", reapplyHR);
+router.get("/:userId/resume/download", downloadResume);
 
 module.exports = router;

@@ -14,3 +14,8 @@ export const uploadHRDocument = (formData) =>
   axiosInstance.post("/profile/me/hr-document", formData);
 
 export const reapplyHR = () => axiosInstance.patch("/profile/me/reapply-hr");
+
+export const downloadResume = (userId) =>
+  axiosInstance.get(`/profile/${userId}/resume/download`, {
+    responseType: "blob",
+  });
