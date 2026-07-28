@@ -24,6 +24,7 @@ const authSlice = createSlice({
       state.user = null;
       state.accessToken = null;
       state.isAuthenticated = false;
+      state.loading = false;
     },
     setLoading: (state, action) => {
       state.loading = action.payload;

@@ -1,5 +1,4 @@
-import { configureStore } from "@reduxjs/toolkit";
-
+import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import authReducer from "../features/auth/authSlice";
 import sessionReducer from "../features/session/sessionSlice";
 import messagesReducer from "../features/messages/messagesSlice";
@@ -8,16 +7,23 @@ import themeReducer from "../features/theme/themeSlice";
 import slotReducer from "../features/slot/slotSlice";
 import interviewReducer from "../features/interview/interviewSlice";
 
-export const store = configureStore({
-  reducer: {
-    auth: authReducer,
-    session: sessionReducer,
-    messages: messagesReducer,
-    friends: friendReducer,
-    theme: themeReducer,
-    slot: slotReducer,
-    interview: interviewReducer,
-  },
+const appReducer = combineReducers({
+  auth: authReducer,
+  session: sessionReducer,
+  messages: messagesReducer,
+  friends: friendReducer,
+  theme: themeReducer,
+  slot: slotReducer,
+  interview: interviewReducer,
 });
 
+const rootReducer = (state, action) => {
+  if (action.type === "auth/logout") {
+    const { theme } = state;
+    state = { theme };
+  }
+  return appReducer(state, action);
+};
+
+export const store = configureStore({ reducer: rootReducer });
 export default store;
