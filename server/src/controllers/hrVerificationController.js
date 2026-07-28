@@ -1,3 +1,4 @@
+const streamFileDownload = require("../utils/streamFileDownload");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/AppError");
 
@@ -74,4 +75,20 @@ const rejectHR = catchAsync(async (req, res, next) => {
     .json({ success: true, message: "HR applicant rejected.", user });
 });
 
-module.exports = { getHRApplicants, approveHR, rejectHR };
+const downloadHRDocument = catchAsync(async (req, res, next) => {
+  const { userId, documentId } = req.params;
+
+  const targetUser = await User.findById(userId);
+  if (!targetUser) return next(new AppError("User not found", 404));
+
+  const document = targetUser.hrDocuments.id(documentId);
+  if (!document) return next(new AppError("Document not found", 404));
+
+  await streamFileDownload(
+    res,
+    document.url,
+    `hr-document-${targetUser.name}.pdf`,
+  );
+});
+
+module.exports = { getHRApplicants, approveHR, rejectHR, downloadHRDocument };

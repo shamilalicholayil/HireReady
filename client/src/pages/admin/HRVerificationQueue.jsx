@@ -4,6 +4,7 @@ import ConfirmDialog from "../../components/common/ConfirmDialog";
 import {
   approveHRApplicant,
   rejectHRApplicant,
+  downloadHRDocument,
 } from "../../api/hrVerificationApi";
 import useHRApplicants from "../../hooks/useHRApplicants";
 
@@ -44,6 +45,21 @@ export default function HRVerificationQueue() {
       setRejectReason("");
     }
   };
+
+  async function handleDownloadHRDocument(applicant) {
+    try {
+      const documentId = applicant.hrDocuments[0]._id;
+      const res = await downloadHRDocument(applicant._id, documentId);
+      const blobUrl = URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = "hr-document.pdf";
+      a.click();
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      toast.error("Couldn't download document.");
+    }
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -117,14 +133,13 @@ export default function HRVerificationQueue() {
                 {a.email}
               </p>
               {a.hrDocuments?.[0]?.url ? (
-                <a
-                  href={a.hrDocuments[0].url}
-                  target="_blank"
-                  rel="noreferrer"
+                <button
+                  type="button"
+                  onClick={() => handleDownloadHRDocument(a)}
                   className="text-xs text-[var(--primary)] hover:underline"
                 >
-                  View verification document
-                </a>
+                  Download verification document
+                </button>
               ) : (
                 <p className="text-xs text-yellow-500">
                   No document uploaded yet
