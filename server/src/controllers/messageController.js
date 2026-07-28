@@ -1,3 +1,4 @@
+const streamFileDownload = require("../utils/streamFileDownload");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/AppError");
 const findOrCreateConversation = require("../utils/findOrCreateConversation");
@@ -229,10 +230,31 @@ const uploadAttachment = catchAsync(async (req, res, next) => {
   });
 });
 
+const downloadAttachment = catchAsync(async (req, res, next) => {
+  const { messageId, attachmentId } = req.params;
+  const userId = req.user._id;
+
+  const message = await Message.findById(messageId);
+  if (!message) return next(new AppError("Message not found", 404));
+
+  const isParticipant =
+    message.sender.toString() === userId.toString() ||
+    message.receiver.toString() === userId.toString();
+  if (!isParticipant) {
+    return next(new AppError("Not authorized for this attachment", 403));
+  }
+
+  const attachment = message.attachments.id(attachmentId);
+  if (!attachment) return next(new AppError("Attachment not found", 404));
+
+  await streamFileDownload(res, attachment.url, attachment.name);
+});
+
 module.exports = {
-  getConversation,
   getConversationsList,
+  getConversation,
   sendMessage,
   markAsRead,
   uploadAttachment,
+  downloadAttachment,
 };

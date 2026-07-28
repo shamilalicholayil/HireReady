@@ -558,7 +558,7 @@ export default function MessagesPage() {
                       {msg.attachments?.length > 0 && (
                         <div className="mb-1.5 space-y-1.5">
                           {msg.attachments.map((att, idx) => (
-                            <AttachmentPreview key={idx} attachment={att} />
+                            <AttachmentPreview key={idx} attachment={att} messageId={msg._id} />
                           ))}
                         </div>
                       )}

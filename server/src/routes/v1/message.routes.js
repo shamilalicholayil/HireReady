@@ -9,6 +9,7 @@ const {
   sendMessage,
   markAsRead,
   uploadAttachment,
+  downloadAttachment
 } = require("../../controllers/messageController");
 
 router.use(protect);
@@ -35,5 +36,6 @@ router.post(
   requireFriendship((req) => req.body.receiverId),
   uploadAttachment,
 );
+router.get("/:messageId/attachments/:attachmentId/download", downloadAttachment);
 
 module.exports = router;

@@ -24,3 +24,9 @@ export const uploadAttachment = (file, receiverId, onUploadProgress) => {
     onUploadProgress,
   });
 };
+
+export const downloadAttachment = (messageId, attachmentId) =>
+  axiosInstance.get(
+    `/messages/${messageId}/attachments/${attachmentId}/download`,
+    { responseType: "blob" }
+  );

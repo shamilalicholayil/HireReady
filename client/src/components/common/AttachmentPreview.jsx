@@ -1,4 +1,7 @@
 import { Download, File as FileIcon } from "lucide-react";
+import { toast } from "sonner";
+
+import { downloadAttachment } from "../../api/messageApi";
 
 function formatBytes(bytes) {
   if (!bytes) return "";
@@ -12,8 +15,23 @@ function formatBytes(bytes) {
   return `${size.toFixed(size < 10 && i > 0 ? 1 : 0)} ${units[i]}`;
 }
 
-export default function AttachmentPreview({ attachment }) {
-  const { url, type, name, size } = attachment;
+export default function AttachmentPreview({ attachment, messageId }) {
+  const { url, type, name, size, _id: attachmentId } = attachment;
+  const downloadUrl = `/api/v1/messages/${messageId}/attachments/${attachmentId}/download`;
+
+  async function handleDownload() {
+    try {
+      const res = await downloadAttachment(messageId, attachmentId);
+      const blobUrl = URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = name;
+      a.click();
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      toast.error("Couldn't download file.");
+    }
+  }
 
   if (type === "image") {
     return (
@@ -42,13 +60,7 @@ export default function AttachmentPreview({ attachment }) {
   }
 
   return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      download={name}
-      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-black/20 border border-[var(--border)] hover:bg-black/30 transition max-w-[240px]"
-    >
+    <button onClick={handleDownload} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-black/20 border border-[var(--border)] hover:bg-black/30 transition max-w-[240px]">
       <FileIcon size={20} className="shrink-0 text-[var(--text-secondary)]" />
       <div className="min-w-0 flex-1">
         <p className="text-xs font-medium text-[var(--text-primary)] truncate">
@@ -61,6 +73,6 @@ export default function AttachmentPreview({ attachment }) {
         )}
       </div>
       <Download size={14} className="shrink-0 text-[var(--text-secondary)]" />
-    </a>
+    </button>
   );
 }
