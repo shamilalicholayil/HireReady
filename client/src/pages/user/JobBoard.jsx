@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { fetchActiveJobs } from "../../api/jobApi";
 import { MapPin } from "lucide-react";
+import JobFilterBar from "../../components/jobs/JobFilterBar";
+import Pagination from "../../components/common/Pagination";
 
 function timeAgo(date) {
   const days = Math.floor((Date.now() - new Date(date).getTime()) / 86400000);
@@ -21,24 +23,25 @@ const TRACK_LABELS = {
 const JobBoard = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({ search: "", track: "" });
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
-    fetchActiveJobs()
-      .then(({ data }) => setJobs(data.data.jobs))
+    setLoading(true);
+    fetchActiveJobs({ ...filters, page, limit: 10 })
+      .then(({ data }) => {
+        setJobs(data.data.jobs);
+        setTotalPages(data.data.pagination.totalPages);
+      })
       .catch(() => toast.error("Failed to load jobs."))
       .finally(() => setLoading(false));
-  }, []);
+  }, [filters, page]);
 
-  if (loading)
-    return (
-      <div className="p-6 text-[var(--text-secondary)]">Loading jobs...</div>
-    );
-  if (!jobs.length)
-    return (
-      <div className="p-6 text-[var(--text-secondary)]">
-        No open positions right now.
-      </div>
-    );
+  const handleFilterChange = (newFilters) => {
+    setPage(1);
+    setFilters(newFilters);
+  };
 
   return (
     <div className="max-w-3xl mx-auto p-4 sm:p-6 space-y-3">
@@ -46,41 +49,53 @@ const JobBoard = () => {
         Job Board
       </h2>
 
-      {jobs.map((job) => (
-        <Link
-          key={job._id}
-          to={`/jobs/${job._id}`}
-          className="block bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 hover:border-[var(--primary)]/60 hover:bg-white/[0.02] transition-colors"
-        >
-          <div className="flex gap-3">
-            <div className="w-11 h-11 rounded-lg bg-[var(--primary)]/15 text-[var(--primary)] flex items-center justify-center font-bold text-sm shrink-0">
-              {job.company?.charAt(0).toUpperCase() || "J"}
-            </div>
+      <JobFilterBar onFilterChange={handleFilterChange} />
 
-            <div className="min-w-0 flex-1">
-              <h3 className="text-[var(--text-primary)] font-semibold text-sm sm:text-base leading-snug truncate">
-                {job.title}
-              </h3>
-              <p className="text-[var(--text-secondary)] text-sm truncate">
-                {job.company}
-              </p>
-              <p className="text-[var(--text-secondary)] text-xs flex items-center gap-1 mt-0.5">
-                <MapPin size={11} className="shrink-0" />
-                {job.location}
-              </p>
+      {loading && (
+        <div className="p-6 text-[var(--text-secondary)]">Loading jobs...</div>
+      )}
+      {!loading && !jobs.length && (
+        <div className="p-6 text-[var(--text-secondary)]">
+          No open positions right now.
+        </div>
+      )}
 
-              <div className="flex flex-wrap items-center gap-2 mt-2">
-                <span className="text-[10px] uppercase font-medium tracking-wide text-[var(--primary)] bg-[var(--primary)]/10 rounded-full px-2 py-0.5">
-                  {TRACK_LABELS[job.track] || job.track}
-                </span>
-                <span className="text-[11px] text-[var(--text-secondary)]">
-                  {timeAgo(job.createdAt)}
-                </span>
+      {!loading &&
+        jobs.map((job) => (
+          <Link
+            key={job._id}
+            to={`/jobs/${job._id}`}
+            className="block bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 hover:border-[var(--primary)]/60 hover:bg-white/[0.02] transition-colors"
+          >
+            <div className="flex gap-3">
+              <div className="w-11 h-11 rounded-lg bg-[var(--primary)]/15 text-[var(--primary)] flex items-center justify-center font-bold text-sm shrink-0">
+                {job.company?.charAt(0).toUpperCase() || "J"}
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-[var(--text-primary)] font-semibold text-sm sm:text-base leading-snug truncate">
+                  {job.title}
+                </h3>
+                <p className="text-[var(--text-secondary)] text-sm truncate">
+                  {job.company}
+                </p>
+                <p className="text-[var(--text-secondary)] text-xs flex items-center gap-1 mt-0.5">
+                  <MapPin size={11} className="shrink-0" />
+                  {job.location}
+                </p>
+                <div className="flex flex-wrap items-center gap-2 mt-2">
+                  <span className="text-[10px] uppercase font-medium tracking-wide text-[var(--primary)] bg-[var(--primary)]/10 rounded-full px-2 py-0.5">
+                    {TRACK_LABELS[job.track] || job.track}
+                  </span>
+                  <span className="text-[11px] text-[var(--text-secondary)]">
+                    {timeAgo(job.createdAt)}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-        </Link>
-      ))}
+          </Link>
+        ))}
+
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
     </div>
   );
 };

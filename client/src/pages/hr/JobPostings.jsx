@@ -7,6 +7,8 @@ import {
 } from "../../api/jobApi";
 import { Button } from "@/components/ui/button";
 import Card from "../../components/common/Card";
+import JobFilterBar from "../../components/jobs/JobFilterBar";
+import Pagination from "../../components/common/Pagination";
 
 const initialForm = {
   title: "",
@@ -22,11 +24,22 @@ const JobPostings = () => {
   const [form, setForm] = useState(initialForm);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({ search: "", track: "" });
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [includeClosed, setIncludeClosed] = useState(false);
 
   const loadJobs = async () => {
+    setLoading(true);
     try {
-      const { data } = await fetchMyJobPostings();
+      const { data } = await fetchMyJobPostings({
+        ...filters,
+        includeClosed,
+        page,
+        limit: 10,
+      });
       setJobs(data.data.jobs);
+      setTotalPages(data.data.pagination.totalPages);
     } catch (err) {
       toast.error("Failed to load job postings.");
     } finally {
@@ -36,7 +49,12 @@ const JobPostings = () => {
 
   useEffect(() => {
     loadJobs();
-  }, []);
+  }, [filters, page, includeClosed]);
+
+  const handleFilterChange = (newFilters) => {
+    setPage(1);
+    setFilters(newFilters);
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -80,9 +98,6 @@ const JobPostings = () => {
       );
     }
   };
-
-  if (loading)
-    return <div className="p-6 text-[var(--text-secondary)]">Loading...</div>;
 
   return (
     <div className="p-6 space-y-4">
@@ -160,22 +175,48 @@ const JobPostings = () => {
         </Card>
       )}
 
-      {jobs.map((job) => (
-        <Card
-          key={job._id}
-          title={job.title}
-          description={`${job.company} — ${job.location}`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs uppercase text-[var(--text-secondary)]">
-              {job.isActive ? "Active" : "Inactive"}
-            </span>
-            <Button variant="outline" onClick={() => handleToggle(job._id)}>
-              {job.isActive ? "Deactivate" : "Activate"}
-            </Button>
-          </div>
-        </Card>
-      ))}
+      <JobFilterBar
+        onFilterChange={handleFilterChange}
+        extraFilter={
+          <label className="flex items-center gap-2 text-sm text-[var(--text-secondary)] px-2">
+            <input
+              type="checkbox"
+              checked={includeClosed}
+              onChange={(e) => {
+                setPage(1);
+                setIncludeClosed(e.target.checked);
+              }}
+            />
+            Include closed
+          </label>
+        }
+      />
+
+      {loading && (
+        <div className="text-[var(--text-secondary)]">Loading...</div>
+      )}
+
+      {!loading &&
+        jobs.map((job) => (
+          <Card
+            key={job._id}
+            title={job.title}
+            description={`${job.company} — ${job.location}`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs uppercase text-[var(--text-secondary)]">
+                {job.isActive ? "Active" : job.isClosed ? "Closed" : "Inactive"}
+              </span>
+              {!job.isClosed && (
+                <Button variant="outline" onClick={() => handleToggle(job._id)}>
+                  {job.isActive ? "Deactivate" : "Activate"}
+                </Button>
+              )}
+            </div>
+          </Card>
+        ))}
+
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
     </div>
   );
 };
