@@ -6,15 +6,45 @@ const AppError = require("../utils/AppError");
 const catchAsync = require("../utils/catchAsync");
 const transporter = require("../utils/mailer");
 const logger = require("../utils/logger");
+const escapeRegex = require("../utils/regex");
 
 const createJob = catchAsync(async (req, res, next) => {
   const job = await Job.create({ ...req.body, postedBy: req.user._id });
   res.status(201).json({ status: "success", data: { job } });
 });
 
-const getActiveJobs = catchAsync(async (req, res, next) => {
-  const jobs = await Job.find({ isActive: true }).sort({ createdAt: -1 });
-  res.status(200).json({ status: "success", data: { jobs } });
+const getActiveJobs = catchAsync(async (req, res) => {
+  const { search, track, page = 1, limit = 10 } = req.query;
+
+  const filter = { isActive: true };
+
+  if (search) {
+    filter.title = { $regex: escapeRegex(search), $options: "i" };
+  }
+
+  if (track) {
+    filter.track = track;
+  }
+
+  const skip = (Number(page) - 1) * Number(limit);
+
+  const [jobs, total] = await Promise.all([
+    Job.find(filter).sort({ createdAt: -1 }).skip(skip).limit(Number(limit)),
+    Job.countDocuments(filter),
+  ]);
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      jobs,
+      pagination: {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / Number(limit)),
+      },
+    },
+  });
 });
 
 const getJobById = catchAsync(async (req, res, next) => {
@@ -29,12 +59,48 @@ const getJobById = catchAsync(async (req, res, next) => {
 });
 
 const getMyJobPostings = catchAsync(async (req, res, next) => {
+  const { search, track, page = 1, limit = 10 } = req.query;
+
   const filter = { postedBy: req.user._id };
+
   if (req.query.includeClosed !== "true") {
     filter.isClosed = false;
   }
-  const jobs = await Job.find(filter).sort({ createdAt: -1 });
-  res.status(200).json({ status: "success", data: { jobs } });
+  if (search) {
+    filter.title = { $regex: escapeRegex(search), $options: "i" };
+  }
+  if (track) {
+    filter.track = track;
+  }
+
+  const skip = (Number(page) - 1) * Number(limit);
+
+  const [jobs, total] = await Promise.all([
+    Job.find(filter).sort({ createdAt: -1 }).skip(skip).limit(Number(limit)),
+    Job.countDocuments(filter),
+  ]);
+
+  const jobsWithCounts = await Promise.all(
+    jobs.map(async (job) => {
+      const applicantCount = await JobApplication.countDocuments({
+        job: job._id,
+      });
+      return { ...job.toObject(), applicantCount };
+    }),
+  );
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      jobs: jobsWithCounts,
+      pagination: {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / Number(limit)),
+      },
+    },
+  });
 });
 
 const toggleJobStatus = catchAsync(async (req, res, next) => {
@@ -79,16 +145,29 @@ const applyToJob = catchAsync(async (req, res, next) => {
 });
 
 const getApplicationsForJob = catchAsync(async (req, res, next) => {
+  const { search, status } = req.query;
+
   const job = await Job.findById(req.params.id);
   if (!job) return next(new AppError("Job not found", 404));
   if (job.postedBy.toString() !== req.user._id.toString()) {
     return next(new AppError("Not authorized to view these applications", 403));
   }
 
-  const applications = await JobApplication.find({ job: job._id })
+  let applications = await JobApplication.find({ job: job._id })
     .populate("applicant", "name email track skills resumeUrl")
     .populate("scheduledSlot")
     .sort({ createdAt: -1 });
+
+  if (status) {
+    applications = applications.filter((app) => app.status === status);
+  }
+
+  if (search) {
+    const term = search.toLowerCase();
+    applications = applications.filter((app) =>
+      app.applicant?.name?.toLowerCase().includes(term),
+    );
+  }
 
   res.status(200).json({ status: "success", data: { applications } });
 });
@@ -158,6 +237,7 @@ const closeJobAndSchedule = catchAsync(async (req, res, next) => {
       name: application.applicant.name,
       contactEmail: req.user.email,
       track: job.track,
+      job: job._id,
       date: slotStart,
       startTime: slotStart,
       endTime: slotEnd,
