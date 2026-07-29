@@ -5,6 +5,7 @@ import {
   fetchJobApplications,
   updateApplicationStatus,
 } from "../../api/jobApi";
+import { downloadResume } from "../../api/profileApi";
 import { Button } from "@/components/ui/button";
 import Card from "../../components/common/Card";
 import CloseAndScheduleForm from "../../components/jobs/CloseAndScheduleForm";
@@ -66,6 +67,20 @@ const Applications = () => {
     }
   };
 
+  async function handleDownloadResume(applicantId) {
+    try {
+      const res = await downloadResume(applicantId);
+      const blobUrl = URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = "resume.pdf";
+      a.click();
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      toast.error("Couldn't download resume.");
+    }
+  }
+
   const selectedJob = jobs.find((j) => j._id === selectedJobId);
   const hasDecisions = applications.some(
     (a) => a.status === "shortlisted" || a.status === "rejected",
@@ -110,6 +125,16 @@ const Applications = () => {
             </span>
             {app.status === "applied" && (
               <div className="flex gap-2">
+                {app.applicant.resumeUrl ? (
+                  <Button
+                    variant="outline"
+                    onClick={() => handleDownloadResume(app.applicant._id)}
+                  >
+                    Download CV
+                  </Button>
+                ) : (
+                  ""
+                )}
                 <Button
                   variant="outline"
                   onClick={() => handleStatusChange(app._id, "shortlisted")}
