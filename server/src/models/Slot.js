@@ -14,6 +14,10 @@ const slotSchema = new mongoose.Schema(
       type: String,
       enum: ["frontend", "backend", "dsa", "fullstack"],
     },
+    job: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Job",
+    },
     date: {
       type: Date,
       required: true,

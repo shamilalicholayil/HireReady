@@ -10,7 +10,11 @@ const getMySlots = catchAsync(async (req, res, next) => {
     req.user.role === "hr"
       ? { contactEmail: req.user.email }
       : { booking: req.user._id };
-  const slots = await Slot.find(filter).sort({ startTime: 1 });
+
+  const slots = await Slot.find(filter)
+    .sort({ startTime: 1 })
+    .populate("job", "title company track");
+
   res.status(200).json({ status: "success", data: { slots } });
 });
 
