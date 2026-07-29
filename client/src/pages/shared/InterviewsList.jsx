@@ -12,6 +12,8 @@ const InterviewsList = () => {
   const isHR = user.role === "hr";
   const [slots, setSlots] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("all");
+  const FINISHED_STATUSES = ["completed", "no_show"];
 
   useEffect(() => {
     const load = async () => {
@@ -64,6 +66,14 @@ const InterviewsList = () => {
     }
   };
 
+  const filteredSlots = slots.filter((slot) => {
+    if (filter === "finished")
+      return FINISHED_STATUSES.includes(slot.interviewStatus);
+    if (filter === "upcoming")
+      return !FINISHED_STATUSES.includes(slot.interviewStatus);
+    return true;
+  });
+
   if (loading)
     return <div className="p-6 text-[var(--text-secondary)]">Loading...</div>;
   if (!slots.length)
@@ -78,7 +88,22 @@ const InterviewsList = () => {
       <h2 className="text-[var(--text-primary)] text-xl font-semibold">
         {isHR ? "Scheduled Interviews" : "My Interviews"}
       </h2>
-      {slots.map((slot) => (
+      <div className="flex gap-2 mb-2">
+        {["all", "upcoming", "finished"].map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`px-3 py-1 rounded-full text-sm ${
+              filter === f
+                ? "bg-[var(--primary)] text-white"
+                : "bg-[var(--surface)] text-[var(--text-secondary)]"
+            }`}
+          >
+            {f[0].toUpperCase() + f.slice(1)}
+          </button>
+        ))}
+      </div>
+      {filteredSlots.map((slot) => (
         <Card
           key={slot._id}
           title={slot.track}
