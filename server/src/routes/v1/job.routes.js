@@ -11,6 +11,7 @@ const {
 const {
   createJob,
   getActiveJobs,
+  getJobById,
   getMyJobPostings,
   toggleJobStatus,
   applyToJob,
@@ -22,6 +23,7 @@ const AppError = require("../../utils/AppError");
 
 router.get("/", protect, getActiveJobs);
 router.get("/my-postings", protect, isHR, getMyJobPostings);
+router.get("/:id", protect, getJobById);
 router.post("/", protect, isHR, validate(createJobSchema), createJob);
 router.patch("/:id/toggle-status", protect, isHR, toggleJobStatus);
 router.post("/:id/apply", protect, applyToJob);

@@ -18,6 +18,7 @@ import TutorialHub from "../pages/user/TutorialHub";
 import FriendsPage from "../pages/user/FriendsPage";
 import MessagesPage from "../pages/user/MessagesPage";
 import JobBoard from "../pages/user/JobBoard";
+import JobDetail from "../pages/user/JobDetail";
 import Interview from "../pages/user/Interview";
 
 import RegisterHR from "../pages/hr/RegisterHR";
@@ -60,6 +61,7 @@ export default function AppRoutes() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/profile/resume" element={<ResumeUpload />} />
           <Route path="/job-board" element={<JobBoard />} />
+          <Route path="/jobs/:id" element={<JobDetail />} />
           <Route path="/my-interviews" element={<InterviewsList />} />
           <Route path="/friends" element={<FriendsPage />} />
           <Route path="/messages" element={<MessagesPage />} />

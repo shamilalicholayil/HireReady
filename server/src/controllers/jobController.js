@@ -17,6 +17,17 @@ const getActiveJobs = catchAsync(async (req, res, next) => {
   res.status(200).json({ status: "success", data: { jobs } });
 });
 
+const getJobById = catchAsync(async (req, res, next) => {
+  const job = await Job.findById(req.params.id);
+  if (!job) return next(new AppError("Job not found", 404));
+
+  if (!job.isActive || job.isClosed) {
+    return next(new AppError("This job posting is no longer active", 404));
+  }
+
+  res.status(200).json({ status: "success", data: { job } });
+});
+
 const getMyJobPostings = catchAsync(async (req, res, next) => {
   const filter = { postedBy: req.user._id };
   if (req.query.includeClosed !== "true") {
@@ -75,7 +86,7 @@ const getApplicationsForJob = catchAsync(async (req, res, next) => {
   }
 
   const applications = await JobApplication.find({ job: job._id })
-    .populate("applicant", "name email track skills")
+    .populate("applicant", "name email track skills resumeUrl")
     .populate("scheduledSlot")
     .sort({ createdAt: -1 });
 
@@ -208,6 +219,7 @@ const closeJobAndSchedule = catchAsync(async (req, res, next) => {
 module.exports = {
   createJob,
   getActiveJobs,
+  getJobById,
   getMyJobPostings,
   toggleJobStatus,
   applyToJob,

@@ -2,6 +2,8 @@ import axiosInstance from "./axiosInstance";
 
 export const fetchActiveJobs = () => axiosInstance.get("/jobs");
 
+export const fetchJobById = (jobId) => axiosInstance.get(`/jobs/${jobId}`);
+
 export const fetchMyJobPostings = (includeClosed = false) =>
   axiosInstance.get("/jobs/my-postings", { params: { includeClosed } });
 

@@ -11,7 +11,6 @@ import {
   BookOpen,
   Trophy,
   Sparkles,
-  ShieldCheck,
   HelpCircle,
   ClipboardList,
   FileCheck2,

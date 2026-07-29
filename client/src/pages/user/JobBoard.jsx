@@ -1,13 +1,26 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { fetchActiveJobs, applyToJob } from "../../api/jobApi";
-import { Button } from "@/components/ui/button";
-import Card from "../../components/common/Card";
+import { fetchActiveJobs } from "../../api/jobApi";
+import { MapPin } from "lucide-react";
+
+function timeAgo(date) {
+  const days = Math.floor((Date.now() - new Date(date).getTime()) / 86400000);
+  if (days === 0) return "Posted today";
+  if (days === 1) return "Posted 1 day ago";
+  return `Posted ${days} days ago`;
+}
+
+const TRACK_LABELS = {
+  frontend: "Frontend",
+  backend: "Backend",
+  dsa: "DSA",
+  fullstack: "Full-stack",
+};
 
 const JobBoard = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [appliedIds, setAppliedIds] = useState(new Set());
 
   useEffect(() => {
     fetchActiveJobs()
@@ -15,16 +28,6 @@ const JobBoard = () => {
       .catch(() => toast.error("Failed to load jobs."))
       .finally(() => setLoading(false));
   }, []);
-
-  const handleApply = async (jobId) => {
-    try {
-      await applyToJob(jobId);
-      setAppliedIds((prev) => new Set(prev).add(jobId));
-      toast.success("Application submitted.");
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to apply.");
-    }
-  };
 
   if (loading)
     return (
@@ -38,31 +41,45 @@ const JobBoard = () => {
     );
 
   return (
-    <div className="p-6 space-y-4">
-      <h2 className="text-[var(--text-primary)] text-xl font-semibold">
+    <div className="max-w-3xl mx-auto p-4 sm:p-6 space-y-3">
+      <h2 className="text-[var(--text-primary)] text-xl font-semibold mb-2">
         Job Board
       </h2>
+
       {jobs.map((job) => (
-        <Card
+        <Link
           key={job._id}
-          title={job.title}
-          description={`${job.company} — ${job.location}`}
+          to={`/jobs/${job._id}`}
+          className="block bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 hover:border-[var(--primary)]/60 hover:bg-white/[0.02] transition-colors"
         >
-          <p className="text-sm text-[var(--text-secondary)] mb-3">
-            {job.description}
-          </p>
-          <div className="flex items-center justify-between">
-            <span className="text-xs uppercase text-[var(--text-secondary)]">
-              {job.track}
-            </span>
-            <Button
-              onClick={() => handleApply(job._id)}
-              disabled={appliedIds.has(job._id)}
-            >
-              {appliedIds.has(job._id) ? "Applied" : "Apply"}
-            </Button>
+          <div className="flex gap-3">
+            <div className="w-11 h-11 rounded-lg bg-[var(--primary)]/15 text-[var(--primary)] flex items-center justify-center font-bold text-sm shrink-0">
+              {job.company?.charAt(0).toUpperCase() || "J"}
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <h3 className="text-[var(--text-primary)] font-semibold text-sm sm:text-base leading-snug truncate">
+                {job.title}
+              </h3>
+              <p className="text-[var(--text-secondary)] text-sm truncate">
+                {job.company}
+              </p>
+              <p className="text-[var(--text-secondary)] text-xs flex items-center gap-1 mt-0.5">
+                <MapPin size={11} className="shrink-0" />
+                {job.location}
+              </p>
+
+              <div className="flex flex-wrap items-center gap-2 mt-2">
+                <span className="text-[10px] uppercase font-medium tracking-wide text-[var(--primary)] bg-[var(--primary)]/10 rounded-full px-2 py-0.5">
+                  {TRACK_LABELS[job.track] || job.track}
+                </span>
+                <span className="text-[11px] text-[var(--text-secondary)]">
+                  {timeAgo(job.createdAt)}
+                </span>
+              </div>
+            </div>
           </div>
-        </Card>
+        </Link>
       ))}
     </div>
   );
