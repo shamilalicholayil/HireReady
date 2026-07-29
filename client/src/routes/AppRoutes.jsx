@@ -20,6 +20,7 @@ import MessagesPage from "../pages/user/MessagesPage";
 import JobBoard from "../pages/user/JobBoard";
 import JobDetail from "../pages/user/JobDetail";
 import Interview from "../pages/user/Interview";
+import Leaderboard from "../pages/user/Leaderboard";
 
 import RegisterHR from "../pages/hr/RegisterHR";
 import HRDocumentUpload from "../pages/hr/HRDocumentUpload";
@@ -34,6 +35,7 @@ import AdminDashboard from "../pages/admin/AdminDashboard";
 import QuestionManagement from "../pages/admin/QuestionManagement";
 import TutorialManagement from "../pages/admin/TutorialManagement";
 import HRVerificationQueue from "@/pages/admin/HRVerificationQueue";
+import LeaderboardManagement from "@/pages/admin/LeaderboardManagement";
 
 import InterviewsList from "../pages/shared/InterviewsList";
 import InterviewRoom from "@/pages/shared/InterviewRoom";
@@ -67,7 +69,7 @@ export default function AppRoutes() {
           <Route path="/friends" element={<FriendsPage />} />
           <Route path="/messages" element={<MessagesPage />} />
           <Route path="/tutorialHub" element={<TutorialHub />} />
-          <Route path="/leaderboard" element={<div>Leaderboard</div>} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
         </Route>
       </Route>
 
@@ -100,12 +102,8 @@ export default function AppRoutes() {
             element={<div>HR/Job Oversight</div>}
           />
           <Route
-            path="/admin/ai-usage-monitor"
-            element={<div>AI Usage Monitor</div>}
-          />
-          <Route
             path="/admin/leaderboard-management"
-            element={<div>Leaderboard Management</div>}
+            element={<LeaderboardManagement />}
           />
           <Route path="/admin/reports" element={<div>Reports</div>} />
         </Route>

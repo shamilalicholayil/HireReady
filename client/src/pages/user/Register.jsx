@@ -1,76 +1,62 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
+
 import { initiateRegister, verifyOtp } from "../../api/authApi";
 import { setCredentials } from "../../features/auth/authSlice";
+import { registerSchema, otpSchema } from "../../validation/authSchemas";
 
 export default function Register() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const [step, setStep] = useState("form");
+  const [email, setEmail] = useState("");
 
-  const [step, setStep] = useState("form"); // "form" | "otp"
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  });
-  const [otp, setOtp] = useState("");
-  const [status, setStatus] = useState("idle"); // idle | loading
-  const [error, setError] = useState("");
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    getValues,
+  } = useForm({ resolver: zodResolver(registerSchema) });
 
-  const handleFormChange = (e) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-  };
+  const {
+    register: registerOtp,
+    handleSubmit: handleOtpSubmit,
+    formState: { errors: otpErrors, isSubmitting: otpSubmitting },
+  } = useForm({ resolver: zodResolver(otpSchema) });
 
-  const handleFormSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
-
-    setStatus("loading");
+  const onSubmit = async (data) => {
     try {
-      const { confirmPassword, ...registerData } = formData;
+      const { confirmPassword, ...registerData } = data;
       await initiateRegister(registerData);
+      setEmail(data.email);
       setStep("otp");
     } catch (err) {
-      setError(err?.response?.data?.message || "Registration failed.");
-    } finally {
-      setStatus("idle");
+      toast.error(err?.response?.data?.message || "Registration failed.");
     }
   };
 
-  const handleOtpSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setStatus("loading");
+  const onVerifyOtp = async ({ otp }) => {
     try {
-      const res = await verifyOtp({ email: formData.email, otp });
+      const res = await verifyOtp({ email, otp });
       const { accessToken, user } = res.data;
       dispatch(setCredentials({ user, accessToken }));
       navigate("/dashboard");
     } catch (err) {
-      setError(err?.response?.data?.message || "Invalid or expired code.");
-    } finally {
-      setStatus("idle");
+      toast.error(err?.response?.data?.message || "Invalid or expired code.");
     }
   };
 
   const handleResend = async () => {
-    setError("");
-    setStatus("loading");
     try {
-      const { confirmPassword, ...registerData } = formData;
+      const { confirmPassword, ...registerData } = getValues();
       await initiateRegister(registerData);
-      setError(""); // could add a small "code resent" toast here later
+      toast.success("Code resent.");
     } catch (err) {
-      setError(err?.response?.data?.message || "Couldn't resend code.");
-    } finally {
-      setStatus("idle");
+      toast.error(err?.response?.data?.message || "Couldn't resend code.");
     }
   };
 
@@ -96,20 +82,26 @@ export default function Register() {
                 Start prepping for your next interview.
               </p>
 
-              <form onSubmit={handleFormSubmit} className="space-y-4">
+              <form
+                onSubmit={handleSubmit(onSubmit)}
+                className="space-y-4"
+                noValidate
+              >
                 <div>
                   <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
                     Name
                   </label>
                   <input
                     type="text"
-                    name="name"
-                    required
-                    value={formData.name}
-                    onChange={handleFormChange}
+                    {...register("name")}
                     placeholder="Jane Doe"
                     className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3.5 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent transition"
                   />
+                  {errors.name && (
+                    <p className="text-xs text-[var(--error)] mt-1">
+                      {errors.name.message}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -118,13 +110,15 @@ export default function Register() {
                   </label>
                   <input
                     type="email"
-                    name="email"
-                    required
-                    value={formData.email}
-                    onChange={handleFormChange}
+                    {...register("email")}
                     placeholder="you@example.com"
                     className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3.5 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent transition"
                   />
+                  {errors.email && (
+                    <p className="text-xs text-[var(--error)] mt-1">
+                      {errors.email.message}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -133,14 +127,15 @@ export default function Register() {
                   </label>
                   <input
                     type="password"
-                    name="password"
-                    required
-                    minLength={8}
-                    value={formData.password}
-                    onChange={handleFormChange}
+                    {...register("password")}
                     placeholder="••••••••"
                     className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3.5 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent transition"
                   />
+                  {errors.password && (
+                    <p className="text-xs text-[var(--error)] mt-1">
+                      {errors.password.message}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -149,28 +144,23 @@ export default function Register() {
                   </label>
                   <input
                     type="password"
-                    name="confirmPassword"
-                    required
-                    minLength={8}
-                    value={formData.confirmPassword}
-                    onChange={handleFormChange}
+                    {...register("confirmPassword")}
                     placeholder="••••••••"
                     className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3.5 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent transition"
                   />
+                  {errors.confirmPassword && (
+                    <p className="text-xs text-[var(--error)] mt-1">
+                      {errors.confirmPassword.message}
+                    </p>
+                  )}
                 </div>
-
-                {error && (
-                  <p className="text-sm text-[var(--error)] bg-[var(--error)]/10 border border-[var(--error)]/20 rounded-lg px-3 py-2">
-                    {error}
-                  </p>
-                )}
 
                 <button
                   type="submit"
-                  disabled={status === "loading"}
+                  disabled={isSubmitting}
                   className="w-full bg-[var(--primary)] text-white text-sm font-medium rounded-lg py-2.5 hover:opacity-90 active:scale-[0.99] transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {status === "loading" ? "Sending code..." : "Continue"}
+                  {isSubmitting ? "Sending code..." : "Continue"}
                 </button>
               </form>
 
@@ -225,12 +215,16 @@ export default function Register() {
               <p className="text-sm text-[var(--text-secondary)] mb-6">
                 We sent a 6-digit code to{" "}
                 <span className="text-[var(--text-primary)] font-medium">
-                  {formData.email}
+                  {email}
                 </span>
                 . It expires in 5 minutes.
               </p>
 
-              <form onSubmit={handleOtpSubmit} className="space-y-4">
+              <form
+                onSubmit={handleOtpSubmit(onVerifyOtp)}
+                className="space-y-4"
+                noValidate
+              >
                 <div>
                   <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
                     Verification code
@@ -239,26 +233,23 @@ export default function Register() {
                     type="text"
                     inputMode="numeric"
                     maxLength={6}
-                    required
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                    {...registerOtp("otp")}
                     placeholder="123456"
                     className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3.5 py-2.5 text-center text-lg tracking-[0.5em] text-[var(--text-primary)] placeholder:tracking-normal placeholder:text-[var(--text-secondary)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent transition"
                   />
+                  {otpErrors.otp && (
+                    <p className="text-xs text-[var(--error)] mt-1 text-center">
+                      {otpErrors.otp.message}
+                    </p>
+                  )}
                 </div>
-
-                {error && (
-                  <p className="text-sm text-[var(--error)] bg-[var(--error)]/10 border border-[var(--error)]/20 rounded-lg px-3 py-2">
-                    {error}
-                  </p>
-                )}
 
                 <button
                   type="submit"
-                  disabled={status === "loading" || otp.length !== 6}
+                  disabled={otpSubmitting}
                   className="w-full bg-[var(--primary)] text-white text-sm font-medium rounded-lg py-2.5 hover:opacity-90 active:scale-[0.99] transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {status === "loading" ? "Verifying..." : "Verify & continue"}
+                  {otpSubmitting ? "Verifying..." : "Verify & continue"}
                 </button>
               </form>
 
@@ -271,8 +262,7 @@ export default function Register() {
                 </button>
                 <button
                   onClick={handleResend}
-                  disabled={status === "loading"}
-                  className="text-[var(--primary)] hover:underline disabled:opacity-50"
+                  className="text-[var(--primary)] hover:underline"
                 >
                   Resend code
                 </button>

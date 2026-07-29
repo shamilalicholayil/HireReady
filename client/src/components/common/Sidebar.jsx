@@ -69,7 +69,6 @@ export default function Sidebar({ isOpen, onClose }) {
         label: "HR/Job Oversight",
         icon: Briefcase,
       },
-      { to: "/admin/ai-usage-monitor", label: "AI Usage Monitor", icon: Gauge },
       {
         to: "/admin/leaderboard-management",
         label: "Leaderboard Management",

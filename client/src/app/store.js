@@ -6,6 +6,7 @@ import friendReducer from "../features/friend/friendSlice";
 import themeReducer from "../features/theme/themeSlice";
 import slotReducer from "../features/slot/slotSlice";
 import interviewReducer from "../features/interview/interviewSlice";
+import leaderboardReducer from "../features/leaderboard/leaderboardSlice";
 
 const appReducer = combineReducers({
   auth: authReducer,
@@ -15,6 +16,7 @@ const appReducer = combineReducers({
   theme: themeReducer,
   slot: slotReducer,
   interview: interviewReducer,
+  leaderboard: leaderboardReducer,
 });
 
 const rootReducer = (state, action) => {

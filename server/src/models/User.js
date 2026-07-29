@@ -75,6 +75,10 @@ const userSchema = new mongoose.Schema(
     skills: {
       type: [String],
     },
+    excludeFromLeaderboard: {
+      type: Boolean,
+      default: false,
+    },
     refreshToken: {
       type: String,
     },

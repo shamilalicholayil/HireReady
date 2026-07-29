@@ -1,9 +1,12 @@
+const mongoose = require("mongoose");
+
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/AppError");
 
 const Session = require("../models/Session");
 const Answer = require("../models/Answer");
 const Question = require("../models/Question");
+const LeaderboardScore = require("../models/LeaderboardScore");
 
 const {
   getQuestionsForSession,
@@ -150,14 +153,47 @@ const finishSession = catchAsync(async (req, res, next) => {
 
   const report = await generateFinalReport({ track: session.track, answers });
 
-  session.finalScore = report.overallScore;
-  session.communicationNotes = report.communicationNotes;
-  session.strengths = report.strengths;
-  session.weaknesses = report.weaknesses;
-  session.improvementSuggestions = report.improvementSuggestions;
-  session.finishTime = new Date();
-  session.status = "completed";
-  await session.save();
+  const dbSession = await mongoose.startSession();
+
+  try {
+    dbSession.startTransaction();
+
+    session.finalScore = report.overallScore;
+    session.communicationNotes = report.communicationNotes;
+    session.strengths = report.strengths;
+    session.weaknesses = report.weaknesses;
+    session.improvementSuggestions = report.improvementSuggestions;
+    session.finishTime = new Date();
+    session.status = "completed";
+    await session.save({ session: dbSession });
+
+    await LeaderboardScore.findOneAndUpdate(
+      {
+        user: session.user,
+        track: session.track,
+        difficulty: session.difficulty,
+      },
+      {
+        $inc: {
+          totalScore: report.overallScore,
+          sessionCount: 1,
+        },
+      },
+      {
+        upsert: true,
+        new: true,
+        setDefaultsOnInsert: true,
+        session: dbSession,
+      },
+    );
+
+    await dbSession.commitTransaction();
+  } catch (err) {
+    await dbSession.abortTransaction();
+    return next(new AppError("Failed to finalize session", 500));
+  } finally {
+    dbSession.endSession();
+  }
 
   res.status(200).json({ success: true, session });
 });

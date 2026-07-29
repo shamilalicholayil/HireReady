@@ -9,6 +9,7 @@ const friendRequestRoutes = require("./friendRequest.routes.js");
 const messageRoutes = require("./message.routes.js");
 const tutorialHubRoutes = require("./tutorialHub.routes.js");
 const interviewRoutes = require("./interview.routes.js");
+const leaderboardRoutes = require("./leaderboard.routes");
 
 const slotRoutes = require("./slot.routes.js");
 const jobRoutes = require("./job.routes.js");
@@ -26,6 +27,7 @@ router.use("/sessions", sessionRoutes);
 router.use("/friend-requests", friendRequestRoutes);
 router.use("/messages", messageRoutes);
 router.use("/interview", interviewRoutes);
+router.use("/leaderboard", leaderboardRoutes);
 
 router.use("/slots", slotRoutes);
 router.use("/jobs", jobRoutes);

@@ -1,6 +1,12 @@
 const { Router } = require("express");
 const router = Router();
 
+const validate = require("../../middlewares/validate.middleware");
+const {
+  createTutorialSchema,
+  updateTutorialSchema,
+} = require("../../validators/tutorial.validator");
+
 const {
   createTutorial,
   getAllTutorials,
@@ -14,10 +20,10 @@ const { protect, isAdmin } = require("../../middlewares/auth.middleware");
 router.use(protect);
 router.use(isAdmin);
 
-router.post("/", createTutorial);
+router.post("/", validate(createTutorialSchema), createTutorial);
 router.get("/", getAllTutorials);
 router.get("/:id", getTutorialById);
-router.put("/:id", updateTutorial);
+router.put("/:id", validate(updateTutorialSchema), updateTutorial);
 router.patch("/:id/toggle-status", toggleTutorialStatus);
 
 module.exports = router;

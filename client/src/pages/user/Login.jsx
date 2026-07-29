@@ -1,28 +1,32 @@
-import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+
 import { loginUser } from "../../api/authApi";
 import {
   setCredentials,
   setLoading,
   setError,
 } from "../../features/auth/authSlice";
+import { loginSchema } from "../../validation/authSchemas";
 
 export default function Login() {
-  const [loginData, setLoginData] = useState({ email: "", password: "" });
   const { loading, error } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const handleChange = (e) =>
-    setLoginData((f) => ({ ...f, [e.target.name]: e.target.value }));
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({ resolver: zodResolver(loginSchema) });
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const onSubmit = async (data) => {
     dispatch(setError(null));
     dispatch(setLoading(true));
     try {
-      const res = await loginUser(loginData);
+      const res = await loginUser(data);
       dispatch(setCredentials(res.data));
       navigate("/");
     } catch (err) {
@@ -52,20 +56,26 @@ export default function Login() {
             Log in to continue your prep.
           </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="space-y-4"
+            noValidate
+          >
             <div>
               <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
                 Email
               </label>
               <input
                 type="email"
-                name="email"
-                required
-                value={loginData.email}
-                onChange={handleChange}
+                {...register("email")}
                 placeholder="you@example.com"
                 className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3.5 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent transition"
               />
+              {errors.email && (
+                <p className="text-xs text-[var(--error)] mt-1">
+                  {errors.email.message}
+                </p>
+              )}
             </div>
 
             <div>
@@ -82,14 +92,17 @@ export default function Login() {
               </div>
               <input
                 type="password"
-                name="password"
-                required
-                value={loginData.password}
-                onChange={handleChange}
+                {...register("password")}
                 placeholder="••••••••"
                 className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3.5 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent transition"
               />
+              {errors.password && (
+                <p className="text-xs text-[var(--error)] mt-1">
+                  {errors.password.message}
+                </p>
+              )}
             </div>
+
             {error && (
               <p className="text-sm text-[var(--error)] bg-[var(--error)]/10 border border-[var(--error)]/20 rounded-lg px-3 py-2">
                 {error}
