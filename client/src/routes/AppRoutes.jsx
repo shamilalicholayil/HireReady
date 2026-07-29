@@ -24,8 +24,9 @@ import Interview from "../pages/user/Interview";
 import RegisterHR from "../pages/hr/RegisterHR";
 import HRDocumentUpload from "../pages/hr/HRDocumentUpload";
 import HRVerificationPending from "../pages/hr/HRVerificationPending";
-import HRApplicationRejected from "@/pages/hr/HRApplicationRejected";
-import Applications from "../pages/hr/Applications";
+import HRApplicationRejected from "../pages/hr/HRApplicationRejected";
+import ApplicationsList from "../pages/hr/ApplicationsList";
+import JobApplicants from "../pages/hr/JobApplicants";
 import JobPostings from "../pages/hr/JobPostings";
 
 import UserManagement from "../pages/admin/UserManagement";
@@ -118,7 +119,6 @@ export default function AppRoutes() {
           element={<HRVerificationPending />}
         />
       </Route>
-
       <Route element={<HRStatusRoute allowedStatus="rejected" />}>
         <Route
           path="/hr-application-rejected"
@@ -130,7 +130,8 @@ export default function AppRoutes() {
         <Route element={<AppLayout />}>
           <Route path="/hr/dashboard" element={<div>HR Dashboard</div>} />
           <Route path="/hr/job-postings" element={<JobPostings />} />
-          <Route path="/hr/applications" element={<Applications />} />
+          <Route path="/hr/applications" element={<ApplicationsList />} />
+          <Route path="/hr/applications/:jobId" element={<JobApplicants />} />
           <Route path="/hr/interviews" element={<InterviewsList />} />
         </Route>
       </Route>
