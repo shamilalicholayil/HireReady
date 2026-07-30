@@ -65,7 +65,7 @@ export default function Sidebar({ isOpen, onClose }) {
         icon: BookOpen,
       },
       {
-        to: "/admin/job-oversight",
+        to: "/admin/jobs",
         label: "HR/Job Oversight",
         icon: Briefcase,
       },
