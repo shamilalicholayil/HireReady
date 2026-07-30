@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, useLocation, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { fetchJobById, applyToJob } from "../../api/jobApi";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,9 @@ const TRACK_LABELS = {
 
 export default function JobDetail() {
   const { id } = useParams();
+  const location = useLocation();
+  const isAdminView = location.pathname.startsWith("/admin");
+
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
   const [applied, setApplied] = useState(false);
@@ -56,14 +59,14 @@ export default function JobDetail() {
   return (
     <div className="max-w-3xl mx-auto p-4 sm:p-6">
       <Link
-        to="/job-board"
+        to={isAdminView ? "/admin/jobs" : "/job-board"}
         className="inline-flex items-center gap-1.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] mb-4"
       >
-        <ArrowLeft size={15} /> Back to Job Board
+        <ArrowLeft size={15} />{" "}
+        {isAdminView ? "Back to Job Oversight" : "Back to Job Board"}
       </Link>
 
       <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-5 sm:p-8">
-        {/* Header */}
         <div className="flex gap-4">
           <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-[var(--primary)]/15 text-[var(--primary)] flex items-center justify-center font-bold text-xl shrink-0">
             {job.company?.charAt(0).toUpperCase() || "J"}
@@ -97,19 +100,20 @@ export default function JobDetail() {
           </span>
         </div>
 
-        <div className="mt-5">
-          <Button
-            onClick={handleApply}
-            disabled={applied || applying}
-            className="w-full sm:w-auto"
-          >
-            {applied ? "Applied" : applying ? "Applying..." : "Apply"}
-          </Button>
-        </div>
+        {!isAdminView && (
+          <div className="mt-5">
+            <Button
+              onClick={handleApply}
+              disabled={applied || applying}
+              className="w-full sm:w-auto"
+            >
+              {applied ? "Applied" : applying ? "Applying..." : "Apply"}
+            </Button>
+          </div>
+        )}
 
         <div className="h-px bg-[var(--border)] my-6" />
 
-        {/* Description */}
         <div>
           <h2 className="text-[var(--text-primary)] font-semibold text-sm uppercase tracking-wide mb-3">
             About the job

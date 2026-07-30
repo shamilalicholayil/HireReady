@@ -36,6 +36,7 @@ import QuestionManagement from "../pages/admin/QuestionManagement";
 import TutorialManagement from "../pages/admin/TutorialManagement";
 import HRVerificationQueue from "@/pages/admin/HRVerificationQueue";
 import LeaderboardManagement from "@/pages/admin/LeaderboardManagement";
+import JobOversight from "@/pages/admin/JobOversight";
 
 import InterviewsList from "../pages/shared/InterviewsList";
 import InterviewRoom from "@/pages/shared/InterviewRoom";
@@ -97,10 +98,8 @@ export default function AppRoutes() {
             path="/admin/tutorial-management"
             element={<TutorialManagement />}
           />
-          <Route
-            path="/admin/job-oversight"
-            element={<div>HR/Job Oversight</div>}
-          />
+          <Route path="/admin/jobs" element={<JobOversight />} />
+          <Route path="/admin/jobs/:id" element={<JobDetail />} />
           <Route
             path="/admin/leaderboard-management"
             element={<LeaderboardManagement />}
