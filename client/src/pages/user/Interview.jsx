@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
-import InterviewStart from "../../components/interview/InterviewStart";
-import InterviewHeader from "../../components/interview/InterviewHeader";
-import InterviewQuestion from "../../components/interview/InterviewQuestion";
-import AnswerEditor from "../../components/interview/AnswerEditor";
-import CameraPreview from "../../components/interview/CameraPreview";
-import ReportDashboard from "../../components/interview/ReportDashboard";
+import InterviewStart from "../../components/interview-ai/InterviewStart";
+import InterviewHeader from "../../components/interview-ai/InterviewHeader";
+import InterviewQuestion from "../../components/interview-ai/InterviewQuestion";
+import AnswerEditor from "../../components/interview-ai/AnswerEditor";
+import CameraPreview from "../../components/interview-ai/CameraPreview";
+import ReportDashboard from "../../components/interview-ai/ReportDashboard";
 
 import {
   startInterviewSession,

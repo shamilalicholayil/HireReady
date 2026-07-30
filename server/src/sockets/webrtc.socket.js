@@ -1,7 +1,18 @@
 const logger = require("../utils/logger");
 const Slot = require("../models/Slot");
 
+const roomState = new Map();
+
+function getRoom(roomId) {
+  if (!roomState.has(roomId)) {
+    roomState.set(roomId, { hostSocketId: null, waiting: new Map() });
+  }
+  return roomState.get(roomId);
+}
+
 const registerWebRTCHandlers = (io, socket) => {
+  let currentRoomId = null;
+
   socket.on("interview:join", async ({ roomId, slotId }) => {
     try {
       const slot = await Slot.findById(slotId);
@@ -19,13 +30,57 @@ const registerWebRTCHandlers = (io, socket) => {
         });
       }
 
-      socket.join(roomId);
-      socket
-        .to(roomId)
-        .emit("interview:peer-joined", { userId: socket.user._id });
+      currentRoomId = roomId;
+      const room = getRoom(roomId);
+
+      if (isHR) {
+        room.hostSocketId = socket.id;
+        socket.join(roomId);
+        socket.emit("interview:admitted", { isHost: true });
+
+        for (const [userId, waitingSocket] of room.waiting) {
+          socket.emit("interview:join-request", {
+            userId,
+            name: waitingSocket.user.name,
+          });
+        }
+        return;
+      }
+
+      room.waiting.set(socket.user._id.toString(), socket);
+      socket.emit("interview:waiting");
+
+      if (room.hostSocketId) {
+        io.to(room.hostSocketId).emit("interview:join-request", {
+          userId: socket.user._id.toString(),
+          name: socket.user.name,
+        });
+      }
     } catch (err) {
       logger.error(`interview:join failed: ${err.message}`);
       socket.emit("interview:error", { message: "Failed to join interview" });
+    }
+  });
+
+  socket.on("interview:admit", ({ roomId, userId }) => {
+    const room = roomState.get(roomId);
+    if (!room || room.hostSocketId !== socket.id) return;
+    const waitingSocket = room.waiting.get(userId);
+    if (!waitingSocket) return;
+
+    room.waiting.delete(userId);
+    waitingSocket.join(roomId);
+    waitingSocket.emit("interview:admitted", { isHost: false });
+    socket.to(roomId).emit("interview:peer-joined", { userId });
+  });
+
+  socket.on("interview:deny", ({ roomId, userId }) => {
+    const room = roomState.get(roomId);
+    if (!room || room.hostSocketId !== socket.id) return;
+    const waitingSocket = room.waiting.get(userId);
+    if (waitingSocket) {
+      waitingSocket.emit("interview:denied");
+      room.waiting.delete(userId);
     }
   });
 
@@ -43,9 +98,44 @@ const registerWebRTCHandlers = (io, socket) => {
       .emit("webrtc:ice-candidate", { candidate, from: socket.user._id });
   });
 
+  socket.on("webrtc:hand-raise", ({ roomId, raised }) => {
+    socket
+      .to(roomId)
+      .emit("webrtc:hand-raise", { userId: socket.user._id, raised });
+  });
+
+  socket.on("webrtc:screen-share", ({ roomId, sharing }) => {
+    socket
+      .to(roomId)
+      .emit("webrtc:screen-share", { userId: socket.user._id, sharing });
+  });
+
   socket.on("interview:leave", ({ roomId }) => {
+    const room = roomState.get(roomId);
+    if (room) {
+      if (room.hostSocketId === socket.id) room.hostSocketId = null;
+      room.waiting.delete(socket.user._id.toString());
+    }
     socket.leave(roomId);
     socket.to(roomId).emit("interview:peer-left", { userId: socket.user._id });
+  });
+
+  socket.on("interview:end", ({ roomId }) => {
+    const room = roomState.get(roomId);
+    if (!room || room.hostSocketId !== socket.id) return;
+    io.to(roomId).emit("interview:ended");
+    roomState.delete(roomId);
+  });
+
+  socket.on("disconnect", () => {
+    if (!currentRoomId) return;
+    const room = roomState.get(currentRoomId);
+    if (!room) return;
+    if (room.hostSocketId === socket.id) room.hostSocketId = null;
+    room.waiting.delete(socket.user._id?.toString());
+    socket
+      .to(currentRoomId)
+      .emit("interview:peer-left", { userId: socket.user._id });
   });
 };
 
