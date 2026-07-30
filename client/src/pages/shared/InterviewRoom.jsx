@@ -168,7 +168,6 @@ const InterviewRoom = () => {
             </div>
           )}
         </div>
-        {/* remote camera tile removed from here — it's the single element above now */}
       </div>
 
       {status === "waiting" && (

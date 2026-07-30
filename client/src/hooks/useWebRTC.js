@@ -16,10 +16,9 @@ export const useWebRTC = (roomId, slotId) => {
   const negotiatedOnceRef = useRef(false);
   const remoteCameraStreamIdRef = useRef(null);
 
-  // Perfect Negotiation state — resolves glare when both sides renegotiate at once
-  const politeRef = useRef(true); // guest defers by default; host flips this to false on admit
-  const makingOfferRef = useRef(false); // true while THIS side has an offer in flight
-  const ignoreOfferRef = useRef(false); // true if this side (impolite) is deliberately dropping a colliding offer
+  const politeRef = useRef(true);
+  const makingOfferRef = useRef(false);
+  const ignoreOfferRef = useRef(false);
 
   const [joined, setJoined] = useState(false);
   const [isHost, setIsHost] = useState(false);
@@ -66,8 +65,6 @@ export const useWebRTC = (roomId, slotId) => {
         socket.emit("webrtc:ice-candidate", { roomId, candidate: e.candidate });
     };
 
-    // Fires whenever a track is added/removed after the connection is live (e.g. screen share toggle).
-    // Only acts after the initial handshake — that one is driven explicitly by 'peer-joined' below.
     pc.onnegotiationneeded = async () => {
       if (!negotiatedOnceRef.current) return;
       try {
@@ -105,7 +102,7 @@ export const useWebRTC = (roomId, slotId) => {
     socket.on("interview:waiting", () => setStatus("waiting"));
     socket.on("interview:admitted", ({ isHost: hostFlag }) => {
       setIsHost(hostFlag);
-      politeRef.current = !hostFlag; // host = impolite (stands ground), guest = polite (defers)
+      politeRef.current = !hostFlag;
       setStatus("admitted");
       setJoined(true);
     });
@@ -125,16 +122,14 @@ export const useWebRTC = (roomId, slotId) => {
       negotiatedOnceRef.current = true;
     });
 
-    // Handles BOTH the initial answer AND any renegotiation offer, including glare
     socket.on("webrtc:offer", async ({ offer }) => {
       const offerCollision =
         makingOfferRef.current || pc.signalingState !== "stable";
 
       ignoreOfferRef.current = !politeRef.current && offerCollision;
-      if (ignoreOfferRef.current) return; // impolite peer: drop the colliding offer, keep our own
+      if (ignoreOfferRef.current) return;
 
       if (offerCollision) {
-        // Polite peer: roll back our own pending local offer, then accept theirs
         await pc.setLocalDescription({ type: "rollback" });
       }
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
@@ -231,7 +226,6 @@ export const useWebRTC = (roomId, slotId) => {
     setCameraOn(track.enabled);
   }, []);
 
-  // add this effect near your other useEffects in useWebRTC.js
   useEffect(() => {
     if (isScreenSharing && screenVideoRef.current && screenStreamRef.current) {
       screenVideoRef.current.srcObject = screenStreamRef.current;
@@ -265,14 +259,11 @@ export const useWebRTC = (roomId, slotId) => {
       const screenTrack = screenStream.getVideoTracks()[0];
       screenSenderRef.current = pc.addTrack(screenTrack, screenStream);
 
-      // no srcObject assignment here — the effect above handles it once
-      // isScreenSharing flips true and the <video ref={screenVideoRef}> mounts
-
       screenTrack.onended = () => toggleScreenShare();
       setIsScreenSharing(true);
       socketRef.current?.emit("webrtc:screen-share", { roomId, sharing: true });
     } catch {
-      // user cancelled the picker — no-op
+      // nothing here
     }
   }, [isScreenSharing, roomId]);
 

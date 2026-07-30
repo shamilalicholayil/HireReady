@@ -14,6 +14,7 @@ const leaderboardRoutes = require("./leaderboard.routes");
 const slotRoutes = require("./slot.routes.js");
 const jobRoutes = require("./job.routes.js");
 
+const adminRoutes = require("./admin.routes.js");
 const userRoutes = require("./user.routes.js");
 const questionRoutes = require("./question.routes");
 const tutorialRoutes = require("./tutorial.routes.js");
@@ -32,6 +33,7 @@ router.use("/leaderboard", leaderboardRoutes);
 router.use("/slots", slotRoutes);
 router.use("/jobs", jobRoutes);
 
+router.use("/admin", adminRoutes);
 router.use("/admin/users", userRoutes);
 router.use("/admin/questions", questionRoutes);
 router.use("/admin/tutorials", tutorialRoutes);

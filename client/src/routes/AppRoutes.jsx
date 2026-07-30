@@ -9,6 +9,7 @@ import AppLayout from "../layouts/AppLayout";
 import Register from "../pages/user/Register";
 import Login from "../pages/user/Login";
 import AuthCallback from "../pages/user/AuthCallback";
+import UserDashboard from "../pages/user/Dashboard";
 import Profile from "../pages/user/Profile";
 import ResumeUpload from "../pages/user/ResumeUpload";
 import AnswerHistory from "../pages/user/AnswerHistory";
@@ -26,12 +27,13 @@ import RegisterHR from "../pages/hr/RegisterHR";
 import HRDocumentUpload from "../pages/hr/HRDocumentUpload";
 import HRVerificationPending from "../pages/hr/HRVerificationPending";
 import HRApplicationRejected from "../pages/hr/HRApplicationRejected";
+import HRDashboard from "../pages/hr/Dashboard";
 import ApplicationsList from "../pages/hr/ApplicationsList";
 import JobApplicants from "../pages/hr/JobApplicants";
 import JobPostings from "../pages/hr/JobPostings";
 
 import UserManagement from "../pages/admin/UserManagement";
-import AdminDashboard from "../pages/admin/AdminDashboard";
+import AdminDashboard from "../pages/admin/Dashboard";
 import QuestionManagement from "../pages/admin/QuestionManagement";
 import TutorialManagement from "../pages/admin/TutorialManagement";
 import HRVerificationQueue from "@/pages/admin/HRVerificationQueue";
@@ -59,7 +61,7 @@ export default function AppRoutes() {
       {/* User */}
       <Route element={<RoleRoute allowedRoles={["user"]} />}>
         <Route element={<AppLayout />}>
-          <Route path="/dashboard" element={<div>Dashboard</div>} />
+          <Route path="/dashboard" element={<UserDashboard />} />
           <Route path="/answers" element={<AnswerHistory />} />
           <Route path="/interview" element={<Interview />} />
           <Route path="/profile" element={<Profile />} />
@@ -125,7 +127,7 @@ export default function AppRoutes() {
 
       <Route element={<RoleRoute allowedRoles={["hr"]} />}>
         <Route element={<AppLayout />}>
-          <Route path="/hr/dashboard" element={<div>HR Dashboard</div>} />
+          <Route path="/hr/dashboard" element={<HRDashboard />} />
           <Route path="/hr/job-postings" element={<JobPostings />} />
           <Route path="/hr/applications" element={<ApplicationsList />} />
           <Route path="/hr/applications/:jobId" element={<JobApplicants />} />
