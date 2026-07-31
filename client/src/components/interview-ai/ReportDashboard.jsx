@@ -38,18 +38,20 @@ function ScoreCard({ title, value, icon: Icon }) {
 
 export default function ReportDashboard({ report, onNewSession }) {
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-8">
-      <div className="glass rounded-3xl p-8 text-center">
+    <div className="mx-auto max-w-6xl space-y-8 p-4 sm:p-6">
+      <div className="glass rounded-3xl p-5 text-center sm:p-8">
         <Trophy className="mx-auto text-yellow-400" size={40} />
-        <h1 className="text-4xl font-bold mt-4">Interview Complete</h1>
+        <h1 className="mt-4 text-3xl font-bold sm:text-4xl">
+          Interview Complete
+        </h1>
         <p className="text-slate-400 mt-2">Your AI performance analysis</p>
-        <div className="text-6xl font-bold text-gradient mt-6">
+        <div className="mt-6 text-5xl font-bold text-gradient sm:text-6xl">
           {report.finalScore}
         </div>
         <p className="text-sm text-slate-400">Overall Score</p>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-5">
+      <div className="grid gap-5 md:grid-cols-3">
         <ScoreCard
           title="Technical Skills"
           value={report.technicalScore}
@@ -67,7 +69,7 @@ export default function ReportDashboard({ report, onNewSession }) {
         />
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid gap-6 md:grid-cols-2">
         <div className="glass rounded-3xl p-6">
           <div className="flex items-center gap-2 mb-4">
             <CheckCircle2 className="text-emerald-400" />
