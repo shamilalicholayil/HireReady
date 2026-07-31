@@ -16,9 +16,10 @@ export const useWebRTC = (roomId, slotId) => {
   const negotiatedOnceRef = useRef(false);
   const remoteCameraStreamIdRef = useRef(null);
 
-  const politeRef = useRef(true);
-  const makingOfferRef = useRef(false);
-  const ignoreOfferRef = useRef(false);
+  // Perfect Negotiation state — resolves glare when both sides renegotiate at once
+  const politeRef = useRef(true); // guest defers by default; host flips this to false on admit
+  const makingOfferRef = useRef(false); // true while THIS side has an offer in flight
+  const ignoreOfferRef = useRef(false); // true if this side (impolite) is deliberately dropping a colliding offer
 
   const [joined, setJoined] = useState(false);
   const [isHost, setIsHost] = useState(false);
@@ -39,6 +40,12 @@ export const useWebRTC = (roomId, slotId) => {
     const pc = new RTCPeerConnection({
       iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
     });
+    pc.onsignalingstatechange = () =>
+      console.log("[signaling]", pc.signalingState);
+    pc.oniceconnectionstatechange = () =>
+      console.log("[ice]", pc.iceConnectionState);
+    pc.onconnectionstatechange = () =>
+      console.log("[connection]", pc.connectionState);
     pcRef.current = pc;
 
     pc.ontrack = (e) => {
@@ -65,6 +72,8 @@ export const useWebRTC = (roomId, slotId) => {
         socket.emit("webrtc:ice-candidate", { roomId, candidate: e.candidate });
     };
 
+    // Fires whenever a track is added/removed after the connection is live (e.g. screen share toggle).
+    // Only acts after the initial handshake — that one is driven explicitly by 'peer-joined' below.
     pc.onnegotiationneeded = async () => {
       if (!negotiatedOnceRef.current) return;
       try {
@@ -102,7 +111,7 @@ export const useWebRTC = (roomId, slotId) => {
     socket.on("interview:waiting", () => setStatus("waiting"));
     socket.on("interview:admitted", ({ isHost: hostFlag }) => {
       setIsHost(hostFlag);
-      politeRef.current = !hostFlag;
+      politeRef.current = !hostFlag; // host = impolite (stands ground), guest = polite (defers)
       setStatus("admitted");
       setJoined(true);
     });
@@ -122,14 +131,24 @@ export const useWebRTC = (roomId, slotId) => {
       negotiatedOnceRef.current = true;
     });
 
+    // Handles BOTH the initial answer AND any renegotiation offer, including glare
     socket.on("webrtc:offer", async ({ offer }) => {
       const offerCollision =
         makingOfferRef.current || pc.signalingState !== "stable";
+      console.log("[offer received]", {
+        polite: politeRef.current,
+        offerCollision,
+        signalingState: pc.signalingState,
+      });
 
       ignoreOfferRef.current = !politeRef.current && offerCollision;
-      if (ignoreOfferRef.current) return;
+      if (ignoreOfferRef.current) {
+        console.log("[offer ignored — impolite peer holding ground]");
+        return;
+      } // impolite peer: drop the colliding offer, keep our own
 
       if (offerCollision) {
+        // Polite peer: roll back our own pending local offer, then accept theirs
         await pc.setLocalDescription({ type: "rollback" });
       }
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
@@ -226,12 +245,6 @@ export const useWebRTC = (roomId, slotId) => {
     setCameraOn(track.enabled);
   }, []);
 
-  useEffect(() => {
-    if (isScreenSharing && screenVideoRef.current && screenStreamRef.current) {
-      screenVideoRef.current.srcObject = screenStreamRef.current;
-    }
-  }, [isScreenSharing]);
-
   const toggleScreenShare = useCallback(async () => {
     const pc = pcRef.current;
     if (!pc) return;
@@ -259,11 +272,13 @@ export const useWebRTC = (roomId, slotId) => {
       const screenTrack = screenStream.getVideoTracks()[0];
       screenSenderRef.current = pc.addTrack(screenTrack, screenStream);
 
+      if (screenVideoRef.current)
+        screenVideoRef.current.srcObject = screenStream;
       screenTrack.onended = () => toggleScreenShare();
       setIsScreenSharing(true);
       socketRef.current?.emit("webrtc:screen-share", { roomId, sharing: true });
     } catch {
-      // nothing here
+      // user cancelled the picker — no-op
     }
   }, [isScreenSharing, roomId]);
 
