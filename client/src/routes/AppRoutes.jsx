@@ -132,6 +132,7 @@ export default function AppRoutes() {
           <Route path="/hr/applications" element={<ApplicationsList />} />
           <Route path="/hr/applications/:jobId" element={<JobApplicants />} />
           <Route path="/hr/interviews" element={<InterviewsList />} />
+          <Route path="/hr/profile" element={<Profile />} />
         </Route>
       </Route>
     </Routes>

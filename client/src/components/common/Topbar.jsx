@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { Bell, Sun, Moon, User, Building2, LogOut, Menu } from "lucide-react";
+import { Bell, Sun, Moon, User, LogOut, Menu } from "lucide-react";
 import { useTheme } from "../../hooks/useTheme";
 import { logoutUser } from "../../api/authApi";
 import { logout } from "../../features/auth/authSlice";
@@ -85,16 +85,14 @@ export default function Topbar({ onMenuClick }) {
             </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => navigate("/profile")}>
+            <DropdownMenuItem
+              onClick={() =>
+                navigate(user?.role === "hr" ? "/hr/profile" : "/profile")
+              }
+            >
               <User size={16} className="mr-2" />
               Profile
             </DropdownMenuItem>
-            {user?.role === "hr" && (
-              <DropdownMenuItem onClick={() => navigate("/hr/company")}>
-                <Building2 size={16} className="mr-2" />
-                Company Info
-              </DropdownMenuItem>
-            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
               <LogOut size={16} className="mr-2" />
