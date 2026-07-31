@@ -106,9 +106,9 @@ export default function TutorialManagement() {
   };
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="space-y-8 p-4 sm:p-6">
       <h1
-        className="text-2xl font-bold"
+        className="text-2xl font-bold sm:text-3xl"
         style={{ color: "var(--text-primary)" }}
       >
         Tutorial Management
@@ -116,7 +116,7 @@ export default function TutorialManagement() {
 
       {/* Form */}
       <div
-        className="rounded-xl p-6 space-y-4"
+        className="space-y-4 rounded-xl p-4 sm:p-6"
         style={{ background: "var(--surface)" }}
       >
         <h2
@@ -168,12 +168,12 @@ export default function TutorialManagement() {
           }}
         />
 
-        <div className="flex gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row">
           <select
             name="track"
             value={form.track}
             onChange={handleChange}
-            className="flex-1 rounded-lg p-3 text-sm"
+            className="w-full flex-1 rounded-lg p-3 text-sm"
             style={{
               background: "var(--bg)",
               color: "var(--text-primary)",
@@ -191,7 +191,7 @@ export default function TutorialManagement() {
             name="difficulty"
             value={form.difficulty}
             onChange={handleChange}
-            className="flex-1 rounded-lg p-3 text-sm"
+            className="w-full flex-1 rounded-lg p-3 text-sm"
             style={{
               background: "var(--bg)",
               color: "var(--text-primary)",
@@ -219,11 +219,11 @@ export default function TutorialManagement() {
           }}
         />
 
-        <div className="flex gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row">
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="px-6 py-2 rounded-lg text-sm font-semibold"
+            className="w-full rounded-lg px-6 py-2 text-sm font-semibold sm:w-auto"
             style={{ background: "var(--primary)", color: "#fff" }}
           >
             {loading ? "Saving..." : editId ? "Update" : "Add Tutorial"}
@@ -234,7 +234,7 @@ export default function TutorialManagement() {
                 setForm(empty);
                 setEditId(null);
               }}
-              className="px-6 py-2 rounded-lg text-sm font-semibold"
+              className="w-full rounded-lg px-6 py-2 text-sm font-semibold sm:w-auto"
               style={{
                 background: "var(--surface)",
                 color: "var(--text-secondary)",
@@ -248,11 +248,11 @@ export default function TutorialManagement() {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row">
         <select
           value={filterTrack}
           onChange={(e) => setFilterTrack(e.target.value)}
-          className="rounded-lg p-2 text-sm"
+          className="w-full rounded-lg p-2 text-sm sm:w-56"
           style={{
             background: "var(--surface)",
             color: "var(--text-primary)",
@@ -296,7 +296,7 @@ export default function TutorialManagement() {
         {tutorials.map((t) => (
           <div
             key={t._id}
-            className="rounded-xl p-4 flex gap-4"
+            className="flex flex-col gap-4 rounded-xl p-4 sm:flex-row"
             style={{
               background: "var(--surface)",
               border: "1px solid var(--border)",
@@ -305,11 +305,11 @@ export default function TutorialManagement() {
             <img
               src={`https://img.youtube.com/vi/${t.youtubeId}/mqdefault.jpg`}
               alt={t.title}
-              className="w-32 h-20 object-cover rounded-lg shrink-0"
+              className="h-44 w-full rounded-lg object-cover sm:h-20 sm:w-32 shrink-0"
             />
 
-            <div className="space-y-1 flex-1">
-              <div className="flex items-center gap-2">
+            <div className="min-w-0 flex-1 space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
                 <p
                   className="text-sm font-medium"
                   style={{ color: "var(--text-primary)" }}
@@ -332,14 +332,14 @@ export default function TutorialManagement() {
               </div>
               {t.description && (
                 <p
-                  className="text-xs"
+                  className="break-words text-xs"
                   style={{ color: "var(--text-secondary)" }}
                 >
                   {t.description}
                 </p>
               )}
               <div
-                className="flex gap-2 text-xs"
+                className="flex flex-wrap gap-2 text-xs"
                 style={{ color: "var(--text-secondary)" }}
               >
                 <span>{t.track}</span>
@@ -350,17 +350,17 @@ export default function TutorialManagement() {
               </div>
             </div>
 
-            <div className="flex gap-2 items-start shrink-0">
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-start shrink-0">
               <button
                 onClick={() => handleEdit(t)}
-                className="px-3 py-1 rounded-lg text-xs font-semibold"
+                className="w-full rounded-lg px-3 py-2 text-xs font-semibold sm:w-auto"
                 style={{ background: "var(--primary)", color: "#fff" }}
               >
                 Edit
               </button>
               <button
                 onClick={() => setConfirmTarget(t)}
-                className="px-3 py-1 rounded-lg text-xs font-semibold"
+                className="w-full rounded-lg px-3 py-2 text-xs font-semibold sm:w-auto"
                 style={{
                   background: t.isActive ? "#ef4444" : "var(--success)",
                   color: "#fff",

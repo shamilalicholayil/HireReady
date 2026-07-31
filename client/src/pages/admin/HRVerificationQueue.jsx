@@ -62,20 +62,20 @@ export default function HRVerificationQueue() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6 p-4 sm:p-6">
       <h1
-        className="text-2xl font-bold"
+        className="text-2xl font-bold sm:text-3xl"
         style={{ color: "var(--text-primary)" }}
       >
         HR Verification Queue
       </h1>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {STATUSES.map((status) => (
           <button
             key={status}
             onClick={() => setActiveStatus(status)}
-            className="px-4 py-2 rounded-lg text-sm font-semibold capitalize"
+            className="rounded-lg px-4 py-2 text-sm font-semibold capitalize transition"
             style={{
               background:
                 activeStatus === status ? "var(--primary)" : "var(--surface)",
@@ -92,7 +92,7 @@ export default function HRVerificationQueue() {
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder="Search by name, email, or company..."
-        className="w-full max-w-md rounded-lg p-3 text-sm"
+        className="w-full rounded-lg p-3 text-sm sm:max-w-md"
         style={{
           background: "var(--bg)",
           color: "var(--text-primary)",
@@ -112,24 +112,27 @@ export default function HRVerificationQueue() {
         {applicants.map((a) => (
           <div
             key={a._id}
-            className="rounded-xl p-4 flex items-center gap-4"
+            className="flex flex-col gap-4 rounded-xl p-4 sm:flex-row sm:items-start"
             style={{
               background: "var(--surface)",
               border: "1px solid var(--border)",
             }}
           >
-            <div className="w-12 h-12 rounded-full bg-[var(--primary)] flex items-center justify-center text-white text-sm font-bold shrink-0">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[var(--primary)] text-sm font-bold text-white">
               {a.name?.charAt(0).toUpperCase() || "U"}
             </div>
 
-            <div className="flex-1 space-y-1">
+            <div className="min-w-0 flex-1 space-y-1">
               <p
-                className="text-sm font-medium"
+                className="break-words text-sm font-medium"
                 style={{ color: "var(--text-primary)" }}
               >
                 {a.name} — <span className="font-normal">{a.companyName}</span>
               </p>
-              <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
+              <p
+                className="break-all text-xs"
+                style={{ color: "var(--text-secondary)" }}
+              >
                 {a.email}
               </p>
               {a.hrDocuments?.[0]?.url ? (
@@ -155,7 +158,7 @@ export default function HRVerificationQueue() {
                   <summary className="text-xs text-[var(--text-secondary)] cursor-pointer hover:text-[var(--text-primary)]">
                     Previously rejected {a.hrRejectionHistory.length}x
                   </summary>
-                  <div className="mt-1 space-y-1 pl-3 border-l-2 border-[var(--border)]">
+                  <div className="mt-1 space-y-1 border-l-2 border-[var(--border)] pl-3 break-words">
                     {a.hrRejectionHistory.map((entry, i) => (
                       <p
                         key={i}
@@ -173,12 +176,12 @@ export default function HRVerificationQueue() {
             </div>
 
             {activeStatus === "pending" && (
-              <div className="flex gap-2 shrink-0">
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row shrink-0">
                 <button
                   onClick={() =>
                     setConfirmTarget({ user: a, action: "approve" })
                   }
-                  className="px-3 py-1 rounded-lg text-xs font-semibold"
+                  className="w-full rounded-lg px-3 py-2 text-xs font-semibold sm:w-auto"
                   style={{ background: "var(--success)", color: "#fff" }}
                 >
                   Approve
@@ -187,7 +190,7 @@ export default function HRVerificationQueue() {
                   onClick={() =>
                     setConfirmTarget({ user: a, action: "reject" })
                   }
-                  className="px-3 py-1 rounded-lg text-xs font-semibold"
+                  className="w-full rounded-lg px-3 py-2 text-xs font-semibold sm:w-auto"
                   style={{ background: "#ef4444", color: "#fff" }}
                 >
                   Reject
@@ -199,7 +202,7 @@ export default function HRVerificationQueue() {
       </div>
 
       {totalPages > 1 && (
-        <div className="flex gap-2 items-center">
+        <div className="flex flex-wrap items-center justify-center gap-3 sm:justify-start">
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}

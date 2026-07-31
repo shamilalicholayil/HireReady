@@ -8,16 +8,16 @@ export default function LeaderboardHeader({
   setDifficulty,
 }) {
   return (
-    <div className="mb-10 flex items-end justify-between">
+    <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
       <div>
-        <h1 className="text-4xl font-bold">Leaderboard</h1>
+        <h1 className="text-3xl font-bold sm:text-4xl">Leaderboard</h1>
 
         <p className="mt-2 text-sm text-muted-foreground">
           Global rankings for {track} interviews
         </p>
       </div>
 
-      <div className="flex gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <TrackFilter track={track} setTrack={setTrack} />
 
         <DifficultyFilter

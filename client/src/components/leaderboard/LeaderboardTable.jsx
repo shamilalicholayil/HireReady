@@ -13,10 +13,10 @@ export default function LeaderboardTable({
 
   return (
     <section className="mt-10">
-      <div className="overflow-hidden rounded-3xl border border-border bg-card">
+      <div className="overflow-x-auto rounded-3xl border border-border bg-card">
         {/* Header */}
 
-        <div className="grid grid-cols-[80px_1fr_120px_120px] border-b border-border bg-background/40 px-6 py-4 text-sm font-semibold text-muted-foreground">
+        <div className="hidden md:grid grid-cols-[80px_1fr_120px_120px] border-b border-border bg-background/40 px-6 py-4 text-sm font-semibold text-muted-foreground">
           <span>Rank</span>
 
           <span>Candidate</span>

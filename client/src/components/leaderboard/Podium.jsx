@@ -7,7 +7,7 @@ export default function Podium({ entries, track }) {
 
   return (
     <section className="mb-12">
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:items-end">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-3 md:items-end">
         {/* 2nd */}
         <PodiumCard player={second} rank={2} track={track} />
         {/* 1st */}

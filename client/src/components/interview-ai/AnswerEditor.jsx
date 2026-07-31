@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Keyboard, FileText, Mic, MicOff } from "lucide-react";
+import { Keyboard, Mic, MicOff } from "lucide-react";
 
 import useSpeechRecognition from "../../hooks/useSpeechRecognition";
 
@@ -42,7 +42,7 @@ export default function AnswerEditor({
 
   return (
     <div className="glass rounded-3xl overflow-hidden">
-      <div className="flex items-center gap-3 text-xs text-slate-400">
+      <div className="flex flex-wrap items-center gap-3 p-4 text-xs text-slate-400">
         {isSupported && (
           <button
             type="button"
@@ -74,11 +74,11 @@ export default function AnswerEditor({
         Explain your approach.
         Include examples, trade-offs, and reasoning...
         "
-        className="w-full min-h-[280px] max-h-[500px] resize-none bg-transparent p-6 text-lg leading-8 outline-none placeholder:text-slate-500"
+        className="min-h-[220px] max-h-[500px] w-full resize-none bg-transparent p-4 text-base leading-7 outline-none placeholder:text-slate-500 sm:min-h-[280px] sm:p-6 sm:text-lg sm:leading-8"
       />
 
-      <div className="flex justify-between px-6 py-4 border-t border-white/10 text-xs text-slate-400">
-        <div className="flex gap-4">
+      <div className="flex flex-col gap-2 border-t border-white/10 px-4 py-4 text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div className="flex flex-wrap gap-4">
           <span>{words} words</span>
           <span>{characters} characters</span>
         </div>

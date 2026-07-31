@@ -39,7 +39,7 @@ export default function CameraPreview() {
   }, []);
 
   return (
-    <div className="glass rounded-3xl overflow-hidden">
+    <div className="glass overflow-hidden rounded-3xl">
       <div className="flex justify-between items-center px-4 py-3 border-b border-white/10">
         <div className="flex gap-2 items-center text-sm">
           {enabled ? <Camera size={16} /> : <CameraOff size={16} />}
@@ -48,7 +48,7 @@ export default function CameraPreview() {
         {enabled && <span className="text-xs text-emerald-400">● Live</span>}
       </div>
 
-      <div className="aspect-video bg-black">
+      <div className="aspect-video min-h-[180px] bg-black">
         <video
           ref={videoRef}
           autoPlay

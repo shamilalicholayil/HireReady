@@ -4,27 +4,28 @@ const DIFFICULTIES = ["beginner", "intermediate", "advanced"];
 
 export default function DifficultyFilter({ difficulty, setDifficulty }) {
   return (
-    <div className="relative">
+    <div className="relative w-full sm:w-48">
       <select
         value={difficulty}
         onChange={(e) => setDifficulty(e.target.value)}
         className="
-        appearance-none
-        rounded-xl
-        border
-        border-border
-        bg-card
-        px-5
-        py-3
-        pr-12
-        text-sm
-        capitalize
-        shadow-sm
-        transition
-        hover:border-primary
-        focus:border-primary
-        focus:outline-none
-      "
+          w-full
+          appearance-none
+          rounded-xl
+          border
+          border-border
+          bg-card
+          px-4
+          py-3
+          pr-10
+          text-sm
+          capitalize
+          shadow-sm
+          transition
+          hover:border-primary
+          focus:border-primary
+          focus:outline-none
+        "
       >
         {DIFFICULTIES.map((level) => (
           <option key={level} value={level}>

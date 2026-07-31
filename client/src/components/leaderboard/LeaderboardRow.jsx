@@ -10,7 +10,9 @@ export default function LeaderboardRow({ entry, rank }) {
     <div
       className={`
         grid
-        grid-cols-[80px_1fr_120px_120px]
+        grid-cols-1
+        gap-4
+        md:grid-cols-[80px_1fr_120px_120px]
         items-center
         border-b
         border-border
@@ -31,31 +33,39 @@ export default function LeaderboardRow({ entry, rank }) {
 
       {/* User */}
 
-      <div className="flex items-center gap-4">
-        <img
-          src={entry.user.avatar || "/default-avatar.png"}
-          alt={entry.user.name}
-          className="h-11 w-11 rounded-full object-cover"
-        />
+      <div className="flex items-center gap-3">
+        {entry.user.avatar ? (
+          <img
+            src={entry.user.avatar}
+            alt={entry.user.name}
+            className="h-10 w-10 rounded-full object-cover sm:h-11 sm:w-11"
+          />
+        ) : (
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white sm:h-11 sm:w-11">
+            {entry.user.name?.charAt(0).toUpperCase()}
+          </div>
+        )}
 
-        <div>
-          <p className="font-medium">
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-medium">
             {entry.user.name}
 
             {isMe && <span className="ml-2 text-primary">(You)</span>}
           </p>
 
-          <p className="text-sm text-muted-foreground">Frontend Interview</p>
+          <p className="truncate text-sm text-muted-foreground">
+            Frontend Interview
+          </p>
         </div>
       </div>
 
       {/* Sessions */}
 
-      <div className="font-medium">{entry.sessionCount}</div>
+      <div className="font-medium md:text-left">{entry.sessionCount}</div>
 
       {/* Score */}
 
-      <div className="text-right">
+      <div className="md:text-right">
         <span className="text-lg font-bold text-primary">
           {entry.totalScore}
         </span>

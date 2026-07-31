@@ -5,11 +5,11 @@ export default function InterviewHeader({
   totalQuestions,
 }) {
   return (
-    <div className="flex justify-between items-center glass rounded-3xl p-6">
+    <div className="glass flex flex-col gap-5 rounded-3xl p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
       <div>
         <h1 className="text-2xl font-bold">AI Interview</h1>
 
-        <div className="flex gap-3 mt-2 text-sm text-slate-400">
+        <div className="mt-2 flex flex-wrap gap-2 text-sm text-slate-400">
           <span>{track}</span>
 
           <span>•</span>
@@ -18,7 +18,7 @@ export default function InterviewHeader({
         </div>
       </div>
 
-      <div className="flex items-center gap-6">
+      <div className="flex flex-wrap items-center gap-4">
         <div className="text-sm">
           Question
           <strong>

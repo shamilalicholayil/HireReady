@@ -105,26 +105,30 @@ const JobApplicants = () => {
   );
 
   return (
-    <div className="p-6 space-y-4">
-      <Button variant="outline" onClick={() => navigate("/hr/applications")}>
+    <div className="space-y-4 p-4 sm:p-6">
+      <Button
+        variant="outline"
+        className="w-full sm:w-auto"
+        onClick={() => navigate("/hr/applications")}
+      >
         ← Back to Applications
       </Button>
 
-      <h2 className="text-[var(--text-primary)] text-xl font-semibold">
+      <h2 className="text-xl font-semibold text-[var(--text-primary)] sm:text-2xl">
         {job?.title || "Applicants"}
       </h2>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col gap-3 sm:flex-row">
         <input
           placeholder="Search by applicant name..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 min-w-[160px] p-2 rounded-lg bg-[var(--background)] border border-[var(--border)] text-[var(--text-primary)]"
+          className="w-full flex-1 rounded-lg border border-[var(--border)] bg-[var(--background)] p-2 text-[var(--text-primary)]"
         />
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
-          className="p-2 rounded-lg bg-[var(--background)] border border-[var(--border)] text-[var(--text-primary)]"
+          className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] p-2 text-[var(--text-primary)] sm:w-56"
         >
           {STATUS_OPTIONS.map((s) => (
             <option key={s.value} value={s.value}>
@@ -150,15 +154,16 @@ const JobApplicants = () => {
             title={app.applicant.name}
             description={app.applicant.email}
           >
-            <div className="flex items-center justify-between">
-              <span className="text-xs uppercase text-[var(--text-secondary)]">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <span className="w-fit rounded-full bg-[var(--surface)] px-3 py-1 text-xs uppercase text-[var(--text-secondary)]">
                 {app.status}
               </span>
               {app.status === "applied" && (
-                <div className="flex gap-2">
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
                   {app.applicant.resumeUrl && (
                     <Button
                       variant="outline"
+                      className="w-full sm:w-auto"
                       onClick={() => handleDownloadResume(app.applicant._id)}
                     >
                       Download CV
@@ -166,12 +171,14 @@ const JobApplicants = () => {
                   )}
                   <Button
                     variant="outline"
+                    className="w-full sm:w-auto"
                     onClick={() => handleStatusChange(app._id, "shortlisted")}
                   >
                     Shortlist
                   </Button>
                   <Button
                     variant="destructive"
+                    className="w-full sm:w-auto"
                     onClick={() => handleStatusChange(app._id, "rejected")}
                   >
                     Reject
@@ -180,7 +187,7 @@ const JobApplicants = () => {
               )}
             </div>
             {app.status === "shortlisted" && app.scheduledSlot && (
-              <p className="mt-2 text-sm text-[var(--text-secondary)]">
+              <p className="mt-3 break-words text-sm text-[var(--text-secondary)]">
                 Interview: {formatSlotTime(app.scheduledSlot)}
               </p>
             )}

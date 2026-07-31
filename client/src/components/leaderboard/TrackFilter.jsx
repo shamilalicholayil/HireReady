@@ -6,11 +6,13 @@ export default function TrackFilter({ track, setTrack }) {
       value={track}
       onChange={(e) => setTrack(e.target.value)}
       className="
+        w-full
+        sm:w-48
         rounded-xl
         border
         border-border
         bg-card
-        px-5
+        px-4
         py-3
         text-sm
         capitalize

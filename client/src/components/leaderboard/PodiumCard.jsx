@@ -39,7 +39,8 @@ export default function PodiumCard({ player, rank, featured = false, track }) {
         rounded-3xl
         border
         bg-card
-        p-6
+        p-4
+        sm:p-6
         transition-all
         duration-300
         hover:-translate-y-2
@@ -87,23 +88,49 @@ export default function PodiumCard({ player, rank, featured = false, track }) {
 
       {/* Avatar */}
 
-      <img
-        src={player.user.avatar || "/default-avatar.png"}
-        alt={player.user.name}
-        className={`
-          mx-auto
-          h-24
-          w-24
-          rounded-full
-          object-cover
-          ring-4
-          ${style.ring}
-        `}
-      />
+      {player.user.avatar ? (
+        <img
+          src={player.user.avatar}
+          alt={player.user.name}
+          className={`
+            mx-auto
+            h-20
+            w-20
+            sm:h-24
+            sm:w-24
+            rounded-full
+            object-cover
+            ring-4
+            ${style.ring}
+          `}
+        />
+      ) : (
+        <div
+          className={`
+            mx-auto
+            flex
+            h-20
+            w-20
+            sm:h-24
+            sm:w-24
+            items-center
+            justify-center
+            rounded-full
+            bg-primary
+            text-2xl
+            font-bold
+            text-white
+            ring-4
+            ${style.ring}
+          `}
+        >
+          {player.user.name?.charAt(0).toUpperCase()}
+        </div>
+      )}
 
       {/* Name */}
 
-      <h3 className="mt-5 text-center text-xl font-semibold">
+      <h3 className="mt-5 text-center text-lg sm:text-xl font-semibold">
         {player.user.name}
       </h3>
 
@@ -120,7 +147,7 @@ export default function PodiumCard({ player, rank, featured = false, track }) {
       {/* Score */}
 
       <div className="text-center">
-        <div className="text-4xl font-bold text-primary">
+        <div className="text-3xl sm:text-4xl font-bold text-primary">
           {player.totalScore}
         </div>
 
@@ -131,7 +158,7 @@ export default function PodiumCard({ player, rank, featured = false, track }) {
 
       {/* Sessions */}
 
-      <div className="mt-6 flex justify-between rounded-xl bg-background/40 p-3">
+      <div className="mt-6 flex items-center justify-between rounded-xl bg-background/40 p-3 text-sm sm:text-base">
         <span className="text-muted-foreground">Sessions</span>
 
         <span className="font-semibold">{player.sessionCount}</span>

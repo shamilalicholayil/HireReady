@@ -36,16 +36,18 @@ export default function InterviewStart({
   error,
 }) {
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-8">
+    <div className="mx-auto max-w-5xl space-y-8 p-4 sm:p-6">
       <div>
-        <h1 className="text-4xl font-bold text-gradient">AI Interview</h1>
+        <h1 className="text-3xl font-bold text-gradient sm:text-4xl">
+          AI Interview
+        </h1>
 
         <p className="text-slate-400 mt-2">
           Practice real interviews with AI evaluation
         </p>
       </div>
 
-      <div className="grid md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         {tracks.map((item) => {
           const Icon = item.icon;
 
@@ -68,7 +70,7 @@ export default function InterviewStart({
       <div>
         <h3 className="mb-3">Difficulty</h3>
 
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           {["beginner", "intermediate", "advanced"].map((level) => (
             <button
               key={level}
