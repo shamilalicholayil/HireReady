@@ -82,6 +82,46 @@ const InterviewRoom = () => {
 
   const isPresenting = isScreenSharing || remoteIsSharing;
 
+  // Each stream gets exactly ONE role at a time. The <video> tags themselves never
+  // unmount — only which role (and therefore which CSS class) they're assigned changes.
+  let remoteCameraRole, localCameraRole, localScreenRole, remoteScreenRole;
+  if (isScreenSharing) {
+    localScreenRole = "main";
+    remoteScreenRole = "hidden";
+    localCameraRole = "tile-top";
+    remoteCameraRole = "tile-bottom";
+  } else if (remoteIsSharing) {
+    remoteScreenRole = "main";
+    localScreenRole = "hidden";
+    localCameraRole = "tile-top";
+    remoteCameraRole = "tile-bottom";
+  } else {
+    remoteCameraRole = "main";
+    localCameraRole = "tile-solo";
+    localScreenRole = "hidden";
+    remoteScreenRole = "hidden";
+  }
+
+  const wrapperClass = (role) => {
+    const tileBase =
+      "overflow-hidden rounded-xl border border-[var(--border)] shadow-lg bg-[var(--surface)] z-10";
+    switch (role) {
+      case "main":
+        return "absolute inset-0 bg-black z-0";
+      case "tile-solo":
+        return `absolute bottom-24 right-4 w-40 h-28 md:w-56 md:h-36 ${tileBase}`;
+      case "tile-top":
+        // Must clear tile-bottom's full height (6rem offset + tile height) plus a gap —
+        // this is what was wrong before: 7.5rem was a guess, not a calculation.
+        return `absolute bottom-[11.5rem] md:bottom-[12.5rem] right-4 w-32 h-20 md:w-40 md:h-24 ${tileBase}`;
+      case "tile-bottom":
+        return `absolute bottom-24 right-4 w-32 h-20 md:w-40 md:h-24 ${tileBase}`;
+      case "hidden":
+      default:
+        return "hidden";
+    }
+  };
+
   return (
     <div className="relative h-[85vh] bg-[var(--bg)] rounded-2xl overflow-hidden">
       {isHost && (
@@ -101,74 +141,63 @@ const InterviewRoom = () => {
         </div>
       )}
 
-      {/* Main stage */}
-      <div className="absolute inset-0 bg-black">
-        {isScreenSharing && (
-          <video
-            ref={screenVideoRef}
-            autoPlay
-            playsInline
-            muted
-            className="w-full h-full object-contain"
-          />
-        )}
-        {!isScreenSharing && remoteIsSharing && (
-          <video
-            ref={remoteScreenVideoRef}
-            autoPlay
-            playsInline
-            className="w-full h-full object-contain"
-          />
-        )}
-
-        {/* Remote camera — ALWAYS mounted here. Only its classes change.
-      Never conditionally render a second <video ref={remoteVideoRef}> anywhere else. */}
+      {/* Remote camera — ALWAYS mounted. Only wrapperClass moves it between main stage and tile. */}
+      <div className={wrapperClass(remoteCameraRole)}>
         <video
           ref={remoteVideoRef}
           autoPlay
           playsInline
-          className={
-            isPresenting
-              ? "absolute bottom-24 right-4 w-32 h-20 md:w-40 md:h-24 object-cover rounded-xl border border-[var(--border)] shadow-lg z-10 transition-all duration-300"
-              : "w-full h-full object-cover transition-all duration-300"
-          }
+          className="w-full h-full object-cover"
         />
-
-        {remoteHandRaised && (
+        {remoteHandRaised && remoteCameraRole === "main" && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-[var(--surface)] px-3 py-1.5 rounded-full flex items-center gap-1.5 text-sm">
             <Hand size={16} className="text-yellow-400" /> Hand raised
           </div>
         )}
-        {isPresenting && (
-          <div className="absolute top-4 right-4 bg-black/60 text-white text-xs px-3 py-1.5 rounded-full">
-            {isScreenSharing ? "You're presenting" : "Presenting"}
+      </div>
+
+      {/* Local camera — ALWAYS mounted */}
+      <div className={wrapperClass(localCameraRole)}>
+        <video
+          ref={localVideoRef}
+          autoPlay
+          muted
+          playsInline
+          className="w-full h-full object-cover"
+        />
+        {!cameraOn && (
+          <div className="absolute inset-0 flex items-center justify-center text-[var(--text-secondary)] text-xs">
+            Camera off
           </div>
         )}
       </div>
 
-      {/* Camera tile stack — only YOUR camera lives here now */}
-      <div className="absolute bottom-24 right-4 flex flex-col gap-2">
-        <div
-          className={`bg-[var(--surface)] rounded-xl overflow-hidden border border-[var(--border)] shadow-lg relative ${
-            isPresenting
-              ? "w-32 h-20 md:w-40 md:h-24"
-              : "w-40 h-28 md:w-56 md:h-36"
-          }`}
-        >
-          <video
-            ref={localVideoRef}
-            autoPlay
-            muted
-            playsInline
-            className="w-full h-full object-cover"
-          />
-          {!cameraOn && (
-            <div className="absolute inset-0 flex items-center justify-center bg-[var(--surface)] text-[var(--text-secondary)] text-xs">
-              Camera off
-            </div>
-          )}
-        </div>
+      {/* Your own screen preview — ALWAYS mounted */}
+      <div className={wrapperClass(localScreenRole)}>
+        <video
+          ref={screenVideoRef}
+          autoPlay
+          muted
+          playsInline
+          className="w-full h-full object-contain"
+        />
       </div>
+
+      {/* Peer's screen — ALWAYS mounted */}
+      <div className={wrapperClass(remoteScreenRole)}>
+        <video
+          ref={remoteScreenVideoRef}
+          autoPlay
+          playsInline
+          className="w-full h-full object-contain"
+        />
+      </div>
+
+      {isPresenting && (
+        <div className="absolute top-4 right-4 bg-black/60 text-white text-xs px-3 py-1.5 rounded-full z-20">
+          {isScreenSharing ? "You're presenting" : "Presenting"}
+        </div>
+      )}
 
       {status === "waiting" && (
         <div className="absolute inset-0 bg-[var(--bg)]/95 flex flex-col items-center justify-center gap-3 text-center px-6 z-30">
