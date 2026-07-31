@@ -40,12 +40,6 @@ export const useWebRTC = (roomId, slotId) => {
     const pc = new RTCPeerConnection({
       iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
     });
-    pc.onsignalingstatechange = () =>
-      console.log("[signaling]", pc.signalingState);
-    pc.oniceconnectionstatechange = () =>
-      console.log("[ice]", pc.iceConnectionState);
-    pc.onconnectionstatechange = () =>
-      console.log("[connection]", pc.connectionState);
     pcRef.current = pc;
 
     pc.ontrack = (e) => {
@@ -135,17 +129,9 @@ export const useWebRTC = (roomId, slotId) => {
     socket.on("webrtc:offer", async ({ offer }) => {
       const offerCollision =
         makingOfferRef.current || pc.signalingState !== "stable";
-      console.log("[offer received]", {
-        polite: politeRef.current,
-        offerCollision,
-        signalingState: pc.signalingState,
-      });
 
       ignoreOfferRef.current = !politeRef.current && offerCollision;
-      if (ignoreOfferRef.current) {
-        console.log("[offer ignored — impolite peer holding ground]");
-        return;
-      } // impolite peer: drop the colliding offer, keep our own
+      if (ignoreOfferRef.current) return; // impolite peer: drop the colliding offer, keep our own
 
       if (offerCollision) {
         // Polite peer: roll back our own pending local offer, then accept theirs
