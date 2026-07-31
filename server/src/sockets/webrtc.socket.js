@@ -1,7 +1,10 @@
 const logger = require("../utils/logger");
 const Slot = require("../models/Slot");
 
-const roomState = new Map();
+// In-memory per-room state — single Node process (fork mode), same known
+// limitation as your Socket.io scaling note. Resets on restart. Fine for now,
+// revisit alongside the Redis adapter migration.
+const roomState = new Map(); // roomId -> { hostSocketId: string|null, waiting: Map<userId, socket> }
 
 function getRoom(roomId) {
   if (!roomState.has(roomId)) {
@@ -11,7 +14,7 @@ function getRoom(roomId) {
 }
 
 const registerWebRTCHandlers = (io, socket) => {
-  let currentRoomId = null;
+  let currentRoomId = null; // tracked for disconnect cleanup
 
   socket.on("interview:join", async ({ roomId, slotId }) => {
     try {
@@ -38,6 +41,7 @@ const registerWebRTCHandlers = (io, socket) => {
         socket.join(roomId);
         socket.emit("interview:admitted", { isHost: true });
 
+        // Flush anyone who was already waiting before the host connected
         for (const [userId, waitingSocket] of room.waiting) {
           socket.emit("interview:join-request", {
             userId,
@@ -47,6 +51,7 @@ const registerWebRTCHandlers = (io, socket) => {
         return;
       }
 
+      // Guest path — always parks in the waiting room, host must explicitly admit
       room.waiting.set(socket.user._id.toString(), socket);
       socket.emit("interview:waiting");
 
@@ -64,7 +69,7 @@ const registerWebRTCHandlers = (io, socket) => {
 
   socket.on("interview:admit", ({ roomId, userId }) => {
     const room = roomState.get(roomId);
-    if (!room || room.hostSocketId !== socket.id) return;
+    if (!room || room.hostSocketId !== socket.id) return; // only the host can admit
     const waitingSocket = room.waiting.get(userId);
     if (!waitingSocket) return;
 
@@ -122,7 +127,7 @@ const registerWebRTCHandlers = (io, socket) => {
 
   socket.on("interview:end", ({ roomId }) => {
     const room = roomState.get(roomId);
-    if (!room || room.hostSocketId !== socket.id) return;
+    if (!room || room.hostSocketId !== socket.id) return; // only host ends for everyone
     io.to(roomId).emit("interview:ended");
     roomState.delete(roomId);
   });
