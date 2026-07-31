@@ -84,16 +84,16 @@ const InterviewsList = () => {
     );
 
   return (
-    <div className="p-6 space-y-4">
-      <h2 className="text-[var(--text-primary)] text-xl font-semibold">
+    <div className="space-y-4 p-4 sm:p-6">
+      <h2 className="text-xl font-semibold text-[var(--text-primary)] sm:text-2xl">
         {isHR ? "Scheduled Interviews" : "My Interviews"}
       </h2>
-      <div className="flex gap-2 mb-2">
+      <div className="mb-2 flex flex-wrap gap-2">
         {["all", "upcoming", "finished"].map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`px-3 py-1 rounded-full text-sm ${
+            className={`rounded-full px-3 py-2 text-sm transition sm:px-4 ${
               filter === f
                 ? "bg-[var(--primary)] text-white"
                 : "bg-[var(--surface)] text-[var(--text-secondary)]"
@@ -109,13 +109,16 @@ const InterviewsList = () => {
           title={slot.track}
           description={new Date(slot.startTime).toLocaleString()}
         >
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-xs uppercase tracking-wide text-[var(--text-secondary)]">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <span className="w-fit rounded-full bg-[var(--surface)] px-3 py-1 text-xs uppercase tracking-wide text-[var(--text-secondary)]">
               {slot.interviewStatus.replace("_", " ")}
             </span>
-            <div className="flex gap-2">
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
               {canJoin(slot) && (
-                <Button onClick={() => handleJoin(slot)}>
+                <Button
+                  className="w-full sm:w-auto"
+                  onClick={() => handleJoin(slot)}
+                >
                   {slot.interviewStatus === "in_progress"
                     ? "Rejoin"
                     : "Join Interview"}
@@ -126,12 +129,14 @@ const InterviewsList = () => {
                 <>
                   <Button
                     variant="outline"
+                    className="w-full sm:w-auto"
                     onClick={() => handleManualStatus(slot, "completed")}
                   >
                     Mark Completed
                   </Button>
                   <Button
                     variant="destructive"
+                    className="w-full sm:w-auto"
                     onClick={() => handleManualStatus(slot, "no_show")}
                   >
                     Mark No-Show

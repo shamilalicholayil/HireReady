@@ -159,7 +159,7 @@ export default function Interview() {
     currentQuestion?.question || currentQuestion?.questionText;
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6">
       <InterviewHeader
         track={track}
         difficulty={difficulty}
@@ -167,8 +167,8 @@ export default function Interview() {
         totalQuestions={session?.totalQuestions}
       />
 
-      <div className="grid lg:grid-cols-[1fr_320px] gap-6">
-        <div className="space-y-6">
+      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+        <div className="order-first space-y-6 lg:order-last">
           {isFollowUp && (
             <div className="glass rounded-2xl p-4 border-yellow-400/30 text-yellow-300">
               AI Follow-up Question

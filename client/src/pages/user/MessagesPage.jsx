@@ -371,12 +371,12 @@ export default function MessagesPage() {
   const iBlockedActiveFriend = me?.blockedUsers?.includes(activeConversationId);
 
   return (
-    <div className="flex h-[calc(100vh-8.5rem)] bg-[var(--surface)] border border-[var(--border)] rounded-2xl overflow-hidden">
+    <div className="flex h-[calc(100dvh-4rem)] md:h-[calc(100vh-8.5rem)] bg-[var(--surface)] border border-[var(--border)] rounded-2xl overflow-hidden">
       <div
-        className={`w-full md:w-80 border-r border-[var(--border)] flex-col overflow-y-auto
+        className={`w-full md:w-80 lg:w-96 border-r border-[var(--border)] flex-col overflow-y-auto
         ${activeConversationId ? "hidden md:flex" : "flex"}`}
       >
-        <div className="px-4 py-4 border-b border-[var(--border)]">
+        <div className="px-2 sm:px-4 py-3 sm:py-4 border-b border-[var(--border)]">
           <h1 className="text-base font-semibold text-[var(--text-primary)]">
             Messages
           </h1>
@@ -404,7 +404,7 @@ export default function MessagesPage() {
               <li key={friend._id}>
                 <button
                   onClick={() => openConversation(friend._id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
+                  className={`w-full flex items-center gap-2 px-3 sm:px-4 py-3 text-left transition-colors ${
                     isActive ? "bg-[var(--primary)]/10" : "hover:bg-white/5"
                   }`}
                 >
@@ -414,7 +414,7 @@ export default function MessagesPage() {
                         src={friend.avatar}
                         alt={friend.name}
                         referrerPolicy="no-referrer"
-                        className="w-10 h-10 rounded-full object-cover border border-[var(--border)]"
+                        className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border border-[var(--border)]"
                       />
                     ) : (
                       <div className="w-10 h-10 rounded-full bg-[var(--primary)] flex items-center justify-center text-white text-sm font-bold">
@@ -453,7 +453,7 @@ export default function MessagesPage() {
         }`}
       >
         {!activeConversationId && (
-          <div className="flex-1 flex items-center justify-center">
+          <div className="flex-1 flex items-center justify-center px-6 text-center">
             <p className="text-sm text-[var(--text-secondary)]">
               Select a conversation to start messaging.
             </p>
@@ -462,7 +462,7 @@ export default function MessagesPage() {
 
         {activeConversationId && (
           <>
-            <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border)]">
+            <div className="flex items-center gap-2 px-3 sm:px-4 py-3 border-b border-[var(--border)]">
               <button
                 onClick={() => dispatch(setActiveConversationId(null))}
                 aria-label="Back to conversations"
@@ -475,15 +475,15 @@ export default function MessagesPage() {
                   src={activeFriend.avatar}
                   alt={activeFriend.name}
                   referrerPolicy="no-referrer"
-                  className="w-9 h-9 rounded-full object-cover border border-[var(--border)]"
+                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover border border-[var(--border)]"
                 />
               ) : (
-                <div className="w-9 h-9 rounded-full bg-[var(--primary)] flex items-center justify-center text-white text-sm font-bold">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[var(--primary)] flex items-center justify-center text-white text-sm truncate font-bold">
                   {activeFriend?.name?.charAt(0).toUpperCase() || "U"}
                 </div>
               )}
-              <div>
-                <p className="text-sm font-medium text-[var(--text-primary)]">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-[var(--text-primary)] truncate">
                   {activeFriend?.name}
                 </p>
                 <p className="text-xs text-[var(--text-secondary)]">
@@ -499,7 +499,7 @@ export default function MessagesPage() {
                 aria-label={
                   iBlockedActiveFriend ? "Unblock user" : "Block user"
                 }
-                className="ml-auto w-9 h-9 flex items-center justify-center rounded-lg text-[var(--text-secondary)] hover:bg-white/5"
+                className="ml-auto shrink-0 w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-lg text-[var(--text-secondary)] hover:bg-white/5"
               >
                 <Ban
                   size={18}
@@ -511,7 +511,7 @@ export default function MessagesPage() {
             <div
               ref={messagesContainerRef}
               onScroll={handleMessagesScroll}
-              className="flex-1 overflow-y-auto px-4 py-4 space-y-2"
+              className="flex-1 overflow-y-auto overscroll-contain touch-pan-y px-2 sm:px-4 py-3 sm:py-4 space-y-2"
             >
               {loadingOlderMessages && (
                 <div className="flex justify-center py-2">
@@ -549,7 +549,7 @@ export default function MessagesPage() {
                     className={`flex ${isMine ? "justify-end" : "justify-start"}`}
                   >
                     <div
-                      className={`max-w-[70%] rounded-2xl px-4 py-2 text-sm ${
+                      className={`max-w-[88%] sm:max-w-[80%] md:max-w-[70%] rounded-2xl px-3 sm:px-4 py-2 text-sm break-words ${
                         isMine
                           ? "bg-[var(--primary)] text-white rounded-br-sm"
                           : "bg-[var(--surface-alt)] text-[var(--text-primary)] rounded-bl-sm"
@@ -558,7 +558,11 @@ export default function MessagesPage() {
                       {msg.attachments?.length > 0 && (
                         <div className="mb-1.5 space-y-1.5">
                           {msg.attachments.map((att, idx) => (
-                            <AttachmentPreview key={idx} attachment={att} messageId={msg._id} />
+                            <AttachmentPreview
+                              key={idx}
+                              attachment={att}
+                              messageId={msg._id}
+                            />
                           ))}
                         </div>
                       )}
@@ -577,10 +581,10 @@ export default function MessagesPage() {
 
             <form
               onSubmit={handleSend}
-              className="relative flex flex-col gap-2 px-4 py-3 border-t border-[var(--border)]"
+              className="relative flex flex-col gap-2 px-3 sm:px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-[var(--border)]"
             >
               {pendingFile && (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-black/20 border border-[var(--border)] text-xs text-[var(--text-primary)]">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-black/20 border border-[var(--border)] text-[11px] sm:text-xs text-[var(--text-primary)]">
                   <Paperclip size={14} className="shrink-0" />
                   <span className="truncate flex-1">{pendingFile.name}</span>
                   {uploadProgress !== null ? (
@@ -603,13 +607,17 @@ export default function MessagesPage() {
               {showEmojiPicker && (
                 <div
                   ref={emojiPopoverRef}
-                  className="absolute bottom-full mb-2 left-4 z-10"
+                  className="absolute bottom-full mb-2 left-2 right-2 sm:left-4 sm:right-auto z-20"
                 >
-                  <EmojiPicker onEmojiClick={handleEmojiClick} height={350} />
+                  <EmojiPicker
+                    onEmojiClick={handleEmojiClick}
+                    width={300}
+                    height={320}
+                  />
                 </div>
               )}
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-end gap-1 sm:gap-2">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -621,7 +629,7 @@ export default function MessagesPage() {
                   onClick={() => fileInputRef.current?.click()}
                   aria-label="Attach file"
                   disabled={sending}
-                  className="w-9 h-9 flex items-center justify-center rounded-lg text-[var(--text-secondary)] hover:bg-white/5 shrink-0 disabled:opacity-40"
+                  className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-lg text-[var(--text-secondary)] hover:bg-white/5 shrink-0 disabled:opacity-40"
                 >
                   <Paperclip size={18} />
                 </button>
@@ -630,7 +638,7 @@ export default function MessagesPage() {
                   type="button"
                   onClick={() => setShowEmojiPicker((v) => !v)}
                   aria-label="Insert emoji"
-                  className="w-9 h-9 flex items-center justify-center rounded-lg text-[var(--text-secondary)] hover:bg-white/5 shrink-0"
+                  className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-lg text-[var(--text-secondary)] hover:bg-white/5 shrink-0"
                 >
                   <Smile size={18} />
                 </button>
@@ -646,13 +654,13 @@ export default function MessagesPage() {
                       ? "You've blocked this user"
                       : "Type a message..."
                   }
-                  className="flex-1 bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3.5 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                  className="flex-1 min-w-0 bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 sm:px-3.5 sm:py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
                 />
                 <button
                   type="submit"
                   disabled={(!draft.trim() && !pendingFile) || sending}
                   aria-label="Send message"
-                  className="w-10 h-10 flex items-center justify-center rounded-lg bg-[var(--primary)] text-white hover:opacity-90 transition disabled:opacity-40"
+                  className="w-9 h-9 sm:w-10 sm:h-10 shrink-0 flex items-center justify-center rounded-lg bg-[var(--primary)] text-white hover:opacity-90 transition disabled:opacity-40"
                 >
                   <Send size={16} />
                 </button>

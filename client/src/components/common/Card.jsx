@@ -7,23 +7,23 @@ export default function Card({
 }) {
   return (
     <div
-      className={`bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6 ${className}`}
+      className={`rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6 ${className}`}
     >
       {(title || action) && (
-        <div className="flex items-start justify-between mb-4">
-          <div>
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0 flex-1">
             {title && (
-              <h2 className="text-[var(--text-primary)] text-base font-semibold">
+              <h2 className="truncate text-base font-semibold text-[var(--text-primary)] sm:text-lg">
                 {title}
               </h2>
             )}
             {description && (
-              <p className="text-[var(--text-secondary)] text-sm mt-1">
+              <p className="mt-1 break-words text-sm text-[var(--text-secondary)]">
                 {description}
               </p>
             )}
           </div>
-          {action}
+          {action && <div className="w-full sm:w-auto">{action}</div>}
         </div>
       )}
       {children}
