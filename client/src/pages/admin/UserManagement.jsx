@@ -42,21 +42,21 @@ export default function UserManagement() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6 p-4 sm:p-6">
       <h1
-        className="text-2xl font-bold"
+        className="text-2xl font-bold sm:text-3xl"
         style={{ color: "var(--text-primary)" }}
       >
         User Management
       </h1>
 
       {/* Role Tabs */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {ROLES.map((role) => (
           <button
             key={role}
             onClick={() => setActiveRole(role)}
-            className="px-4 py-2 rounded-lg text-sm font-semibold capitalize"
+            className="rounded-lg px-4 py-2 text-sm font-semibold capitalize transition"
             style={{
               background:
                 activeRole === role ? "var(--primary)" : "var(--surface)",
@@ -74,7 +74,7 @@ export default function UserManagement() {
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder="Search by name or email..."
-        className="w-full max-w-md rounded-lg p-3 text-sm"
+        className="w-full rounded-lg p-3 text-sm sm:max-w-md"
         style={{
           background: "var(--bg)",
           color: "var(--text-primary)",
@@ -95,7 +95,7 @@ export default function UserManagement() {
         {users.map((u) => (
           <div
             key={u._id}
-            className="rounded-xl p-4 flex items-center gap-4"
+            className="flex flex-col gap-4 rounded-xl p-4 sm:flex-row sm:items-center"
             style={{
               background: "var(--surface)",
               border: "1px solid var(--border)",
@@ -106,18 +106,18 @@ export default function UserManagement() {
                 src={u.avatar}
                 alt={u.name}
                 referrerPolicy="no-referrer"
-                className="w-12 h-12 rounded-full object-cover border border-[var(--border)] shrink-0"
+                className="h-12 w-12 shrink-0 rounded-full border border-[var(--border)] object-cover"
               />
             ) : (
-              <div className="w-12 h-12 rounded-full bg-[var(--primary)] flex items-center justify-center text-white text-sm font-bold shrink-0">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[var(--primary)] text-sm font-bold text-white">
                 {u.name?.charAt(0).toUpperCase() || "U"}
               </div>
             )}
 
-            <div className="flex-1 space-y-1">
-              <div className="flex items-center gap-2">
+            <div className="min-w-0 flex-1 space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
                 <p
-                  className="text-sm font-medium"
+                  className="truncate text-sm font-medium"
                   style={{ color: "var(--text-primary)" }}
                 >
                   {u.name}
@@ -134,7 +134,10 @@ export default function UserManagement() {
                   {u.isBlocked ? "Blocked" : "Active"}
                 </span>
               </div>
-              <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
+              <p
+                className="break-all text-xs"
+                style={{ color: "var(--text-secondary)" }}
+              >
                 {u.email}
               </p>
               {u.track && (
@@ -150,7 +153,7 @@ export default function UserManagement() {
             <button
               onClick={() => setConfirmTarget(u)}
               disabled={u.role === "admin"}
-              className="px-3 py-1 rounded-lg text-xs font-semibold shrink-0 disabled:opacity-40"
+              className="w-full rounded-lg px-3 py-2 text-xs font-semibold sm:w-auto shrink-0 disabled:opacity-40"
               style={{
                 background: u.isBlocked ? "var(--success)" : "#ef4444",
                 color: "#fff",
@@ -164,7 +167,7 @@ export default function UserManagement() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex gap-2 items-center">
+        <div className="flex flex-wrap items-center justify-center gap-3 sm:justify-start">
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
