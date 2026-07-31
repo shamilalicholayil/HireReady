@@ -1,6 +1,10 @@
 const jwt = require("jsonwebtoken");
+
+const { corsAllowedOrigins } = require("./env");
+
 const logger = require("../utils/logger");
 const isBlocked = require("../utils/isBlocked");
+
 const User = require("../models/User");
 
 const registerWebRTCHandlers = require("../sockets/webrtc.socket");
@@ -11,7 +15,7 @@ let ioInstance = null;
 function initSocket(server) {
   const io = require("socket.io")(server, {
     cors: {
-      origin: process.env.CLIENT_URL,
+      origin: corsAllowedOrigins,
       credentials: true,
     },
   });

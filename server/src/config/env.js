@@ -17,6 +17,7 @@ const requiredKeys = [
   "GEMINI_API_KEY",
   "GEMINI_MODEL_FLASH",
   "GEMINI_MODEL_PRO",
+  "CORS_ALLOWED_ORIGINS",
 ];
 
 requiredKeys.forEach((key) => {
@@ -24,3 +25,11 @@ requiredKeys.forEach((key) => {
     throw new Error(`Missing required environment variable: ${key}`);
   }
 });
+
+const corsAllowedOrigins = process.env.CORS_ALLOWED_ORIGINS.split(",").map(
+  (o) => o.trim(),
+);
+
+module.exports = {
+  corsAllowedOrigins,
+};

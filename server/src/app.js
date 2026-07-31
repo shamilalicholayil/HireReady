@@ -8,6 +8,7 @@ const xssClean = require("xss-clean");
 const passport = require("passport");
 
 require("./config/passport");
+const { corsAllowedOrigins } = require("../src/config/env");
 
 const logger = require("./utils/logger");
 const errorMiddleware = require("./middlewares/error.middleware");
@@ -18,7 +19,13 @@ const app = express();
 app.use(helmet());
 app.use(
   cors({
-    origin: process.env.CLIENT_URL,
+    origin: (origin, callback) => {
+      if (!origin || corsAllowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   }),
 );
