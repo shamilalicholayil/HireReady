@@ -31,8 +31,8 @@ const ApplicationsList = () => {
   };
 
   return (
-    <div className="p-6 space-y-3">
-      <h2 className="text-[var(--text-primary)] text-xl font-semibold">
+    <div className="space-y-4 p-4 sm:p-6">
+      <h2 className="text-xl font-semibold text-[var(--text-primary)] sm:text-2xl">
         Applications
       </h2>
 
@@ -52,22 +52,22 @@ const ApplicationsList = () => {
           <div
             key={job._id}
             onClick={() => navigate(`/hr/applications/${job._id}`)}
-            className="cursor-pointer bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 hover:border-[var(--primary)]/60 transition-colors flex items-center justify-between gap-3"
+            className="flex cursor-pointer flex-col gap-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 transition-colors hover:border-[var(--primary)]/60 sm:flex-row sm:items-center sm:justify-between"
           >
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <h3 className="text-[var(--text-primary)] font-semibold truncate">
                 {job.title}
               </h3>
-              <p className="text-[var(--text-secondary)] text-sm truncate">
+              <p className="break-words text-sm text-[var(--text-secondary)]">
                 {job.company} — {job.location}
               </p>
               <p className="text-[var(--text-secondary)] text-xs mt-1">
                 Posted {new Date(job.createdAt).toLocaleDateString("en-GB")}
               </p>
             </div>
-            <div className="flex flex-col items-end gap-1 shrink-0">
+            <div className="flex flex-row items-center justify-between gap-3 sm:flex-col sm:items-end sm:justify-center shrink-0">
               <span
-                className={`text-[10px] uppercase font-medium tracking-wide rounded-full px-2 py-0.5 ${
+                className={`rounded-full px-2 py-1 text-[10px] font-medium uppercase tracking-wide ${
                   job.isClosed
                     ? "text-[var(--text-secondary)] bg-white/5"
                     : job.isActive
@@ -77,7 +77,7 @@ const ApplicationsList = () => {
               >
                 {job.isClosed ? "Closed" : job.isActive ? "Open" : "Inactive"}
               </span>
-              <span className="text-xs text-[var(--text-secondary)]">
+              <span className="whitespace-nowrap text-xs text-[var(--text-secondary)]">
                 {job.applicantCount} applicant
                 {job.applicantCount !== 1 ? "s" : ""}
               </span>
