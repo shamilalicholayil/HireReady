@@ -2,7 +2,12 @@ import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { fetchMySlots, updateInterviewStatus } from "../../api/slotApi";
+import NextRoundButton from "../../components/jobs/NextRoundButton";
+import {
+  fetchMySlots,
+  updateInterviewStatus,
+  setSlotOutcome,
+} from "../../api/slotApi";
 import { Button } from "@/components/ui/button";
 import Card from "../../components/common/Card";
 
@@ -66,6 +71,23 @@ const InterviewsList = () => {
     }
   };
 
+  const handleOutcome = async (slot, outcome) => {
+    try {
+      const { data } = await setSlotOutcome(slot._id, outcome);
+      setSlots((prev) =>
+        prev.map((s) => (s._id === slot._id ? data.data.slot : s)),
+      );
+      toast.success(
+        outcome === "shortlisted" ? "Shortlisted for next round." : "Rejected.",
+      );
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to set outcome.");
+    }
+  };
+
+  const hasNextRound = (slot) =>
+    slots.some((s) => s.previousRound === slot._id);
+
   const filteredSlots = slots.filter((slot) => {
     if (filter === "finished")
       return FINISHED_STATUSES.includes(slot.interviewStatus);
@@ -124,6 +146,7 @@ const InterviewsList = () => {
                     : "Join Interview"}
                 </Button>
               )}
+
               {/* HR-only manual status controls — only valid mid-interview per state machine */}
               {isHR && slot.interviewStatus === "in_progress" && (
                 <>
@@ -142,6 +165,43 @@ const InterviewsList = () => {
                     Mark No-Show
                   </Button>
                 </>
+              )}
+
+              {isHR &&
+                slot.interviewStatus === "completed" &&
+                slot.outcome === "pending" && (
+                  <>
+                    <Button
+                      className="w-full sm:w-auto"
+                      onClick={() => handleOutcome(slot, "shortlisted")}
+                    >
+                      Shortlist
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      className="w-full sm:w-auto"
+                      onClick={() => handleOutcome(slot, "rejected")}
+                    >
+                      Reject
+                    </Button>
+                  </>
+                )}
+
+              {isHR &&
+                slot.outcome === "shortlisted" &&
+                !hasNextRound(slot) && (
+                  <NextRoundButton
+                    slot={slot}
+                    onScheduled={(nextSlot) =>
+                      setSlots((prev) => [...prev, nextSlot])
+                    }
+                  />
+                )}
+
+              {isHR && slot.outcome === "shortlisted" && hasNextRound(slot) && (
+                <span className="w-fit rounded-full bg-[var(--primary)]/15 px-3 py-1 text-xs text-[var(--primary)]">
+                  Next round scheduled
+                </span>
               )}
             </div>
           </div>

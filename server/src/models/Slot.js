@@ -45,6 +45,21 @@ const slotSchema = new mongoose.Schema(
       enum: ["not_started", "in_progress", "completed", "no_show"],
       default: "not_started",
     },
+    round: {
+      type: String,
+      enum: ["screening", "technical", "managerial", "hr_final"],
+      default: "screening",
+    },
+    previousRound: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Slot",
+      default: null,
+    },
+    outcome: {
+      type: String,
+      enum: ["pending", "shortlisted", "rejected"],
+      default: "pending",
+    },
     startedAt: Date,
     endedAt: Date,
   },

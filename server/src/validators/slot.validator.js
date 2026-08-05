@@ -15,4 +15,18 @@ const updateInterviewStatusSchema = Joi.object({
   status: Joi.string().valid("in_progress", "completed", "no_show").required(),
 });
 
-module.exports = { createSlotSchema, updateInterviewStatusSchema };
+const setSlotOutcomeSchema = Joi.object({
+  outcome: Joi.string().valid("shortlisted", "rejected").required(),
+});
+
+const scheduleNextRoundSchema = Joi.object({
+  nextSlotId: Joi.string().hex().length(24).required(),
+  round: Joi.string().valid("technical", "managerial", "hr_final").required(),
+});
+
+module.exports = {
+  createSlotSchema,
+  updateInterviewStatusSchema,
+  setSlotOutcomeSchema,
+  scheduleNextRoundSchema,
+};

@@ -11,9 +11,13 @@ const {
   getMySlots,
   getSlotById,
   updateInterviewStatus,
+  setSlotOutcome,
+  scheduleNextRound,
 } = require("../../controllers/slotController");
 const {
   createSlotSchema,
+  setSlotOutcomeSchema,
+  scheduleNextRoundSchema,
   updateInterviewStatusSchema,
 } = require("../../validators/slot.validator");
 
@@ -26,6 +30,20 @@ router.patch(
   requireInterviewParty,
   validate(updateInterviewStatusSchema),
   updateInterviewStatus,
+);
+router.patch(
+  "/:id/outcome",
+  protect,
+  requireInterviewParty,
+  validate(setSlotOutcomeSchema),
+  setSlotOutcome,
+);
+router.post(
+  "/:id/next-round",
+  protect,
+  requireInterviewParty,
+  validate(scheduleNextRoundSchema),
+  scheduleNextRound,
 );
 
 module.exports = router;
