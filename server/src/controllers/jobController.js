@@ -7,10 +7,11 @@ const catchAsync = require("../utils/catchAsync");
 const transporter = require("../utils/mailer");
 const logger = require("../utils/logger");
 const escapeRegex = require("../utils/regex");
+const httpStatus = require("../constants/httpStatus");
 
 const createJob = catchAsync(async (req, res, next) => {
   const job = await Job.create({ ...req.body, postedBy: req.user._id });
-  res.status(201).json({ status: "success", data: { job } });
+  res.status(httpStatus.CREATED).json({ status: "success", data: { job } });
 });
 
 const getActiveJobs = catchAsync(async (req, res) => {
@@ -33,7 +34,7 @@ const getActiveJobs = catchAsync(async (req, res) => {
     Job.countDocuments(filter),
   ]);
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     status: "success",
     data: {
       jobs,
@@ -49,13 +50,18 @@ const getActiveJobs = catchAsync(async (req, res) => {
 
 const getJobById = catchAsync(async (req, res, next) => {
   const job = await Job.findById(req.params.id);
-  if (!job) return next(new AppError("Job not found", 404));
+  if (!job) return next(new AppError("Job not found", httpStatus.NOT_FOUND));
 
   if (!job.isActive || job.isClosed) {
-    return next(new AppError("This job posting is no longer active", 404));
+    return next(
+      new AppError(
+        "This job posting is no longer active",
+        httpStatus.NOT_FOUND,
+      ),
+    );
   }
 
-  res.status(200).json({ status: "success", data: { job } });
+  res.status(httpStatus.OK).json({ status: "success", data: { job } });
 });
 
 const getMyJobPostings = catchAsync(async (req, res, next) => {
@@ -89,7 +95,7 @@ const getMyJobPostings = catchAsync(async (req, res, next) => {
     }),
   );
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     status: "success",
     data: {
       jobs: jobsWithCounts,
@@ -105,29 +111,34 @@ const getMyJobPostings = catchAsync(async (req, res, next) => {
 
 const toggleJobStatus = catchAsync(async (req, res, next) => {
   const job = await Job.findById(req.params.id);
-  if (!job) return next(new AppError("Job not found", 404));
+  if (!job) return next(new AppError("Job not found", httpStatus.NOT_FOUND));
   if (job.postedBy.toString() !== req.user._id.toString()) {
-    return next(new AppError("Not authorized to modify this job", 403));
+    return next(
+      new AppError("Not authorized to modify this job", httpStatus.FORBIDDEN),
+    );
   }
   if (job.isClosed) {
     return next(
       new AppError(
         "This job has already been closed and scheduled; it can't be reactivated",
-        400,
+        httpStatus.BAD_REQUEST,
       ),
     );
   }
   job.isActive = !job.isActive;
   await job.save();
-  res.status(200).json({ status: "success", data: { job } });
+  res.status(httpStatus.OK).json({ status: "success", data: { job } });
 });
 
 const applyToJob = catchAsync(async (req, res, next) => {
   const job = await Job.findById(req.params.id);
-  if (!job) return next(new AppError("Job not found", 404));
+  if (!job) return next(new AppError("Job not found", httpStatus.NOT_FOUND));
   if (!job.isActive)
     return next(
-      new AppError("This job is no longer accepting applications", 400),
+      new AppError(
+        "This job is no longer accepting applications",
+        httpStatus.BAD_REQUEST,
+      ),
     );
 
   try {
@@ -135,10 +146,17 @@ const applyToJob = catchAsync(async (req, res, next) => {
       job: job._id,
       applicant: req.user._id,
     });
-    res.status(201).json({ status: "success", data: { application } });
+    res
+      .status(httpStatus.CREATED)
+      .json({ status: "success", data: { application } });
   } catch (err) {
     if (err.code === 11000) {
-      return next(new AppError("You've already applied to this job", 400));
+      return next(
+        new AppError(
+          "You've already applied to this job",
+          httpStatus.BAD_REQUEST,
+        ),
+      );
     }
     throw err;
   }
@@ -148,9 +166,14 @@ const getApplicationsForJob = catchAsync(async (req, res, next) => {
   const { search, status } = req.query;
 
   const job = await Job.findById(req.params.id);
-  if (!job) return next(new AppError("Job not found", 404));
+  if (!job) return next(new AppError("Job not found", httpStatus.NOT_FOUND));
   if (job.postedBy.toString() !== req.user._id.toString()) {
-    return next(new AppError("Not authorized to view these applications", 403));
+    return next(
+      new AppError(
+        "Not authorized to view these applications",
+        httpStatus.FORBIDDEN,
+      ),
+    );
   }
 
   let applications = await JobApplication.find({ job: job._id })
@@ -169,7 +192,7 @@ const getApplicationsForJob = catchAsync(async (req, res, next) => {
     );
   }
 
-  res.status(200).json({ status: "success", data: { applications } });
+  res.status(httpStatus.OK).json({ status: "success", data: { applications } });
 });
 
 const updateApplicationStatus = catchAsync(async (req, res, next) => {
@@ -178,27 +201,37 @@ const updateApplicationStatus = catchAsync(async (req, res, next) => {
     "job",
   );
 
-  if (!application) return next(new AppError("Application not found", 404));
+  if (!application)
+    return next(new AppError("Application not found", httpStatus.NOT_FOUND));
   if (application.job.postedBy.toString() !== req.user._id.toString()) {
-    return next(new AppError("Not authorized to update this application", 403));
+    return next(
+      new AppError(
+        "Not authorized to update this application",
+        httpStatus.FORBIDDEN,
+      ),
+    );
   }
 
   application.status = status;
   await application.save();
 
-  res.status(200).json({ status: "success", data: { application } });
+  res.status(httpStatus.OK).json({ status: "success", data: { application } });
 });
 
 const closeJobAndSchedule = catchAsync(async (req, res, next) => {
   const { interviewWindowStart, avgDurationMinutes } = req.body;
 
   const job = await Job.findById(req.params.id);
-  if (!job) return next(new AppError("Job not found", 404));
+  if (!job) return next(new AppError("Job not found", httpStatus.NOT_FOUND));
   if (job.postedBy.toString() !== req.user._id.toString()) {
-    return next(new AppError("Not authorized to close this job", 403));
+    return next(
+      new AppError("Not authorized to close this job", httpStatus.FORBIDDEN),
+    );
   }
   if (!job.isActive) {
-    return next(new AppError("This job is already closed", 400));
+    return next(
+      new AppError("This job is already closed", httpStatus.BAD_REQUEST),
+    );
   }
 
   job.isActive = false;
@@ -286,7 +319,7 @@ const closeJobAndSchedule = catchAsync(async (req, res, next) => {
     }
   }
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     status: "success",
     data: {
       job,

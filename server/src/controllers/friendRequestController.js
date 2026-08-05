@@ -3,32 +3,45 @@ const AppError = require("../utils/AppError");
 
 const FriendRequest = require("../models/FriendRequest");
 const User = require("../models/User");
+const httpStatus = require("../constants/httpStatus");
 
 const sendFriendRequest = catchAsync(async (req, res, next) => {
   const myId = req.user._id;
   const { receiverId } = req.body;
 
   if (!receiverId) {
-    return next(new AppError("receiverId required.", 400));
+    return next(new AppError("receiverId required.", httpStatus.BAD_REQUEST));
   }
 
   if (receiverId === myId.toString()) {
     return next(
-      new AppError("You cannot send a friend request to yourself.", 400),
+      new AppError(
+        "You cannot send a friend request to yourself.",
+        httpStatus.BAD_REQUEST,
+      ),
     );
   }
 
   const target = await User.findById(receiverId).select("blockedUsers");
-  if (!target) return next(new AppError("User not found.", 404));
+  if (!target)
+    return next(new AppError("User not found.", httpStatus.NOT_FOUND));
 
   if (target.blockedUsers.includes(myId.toString())) {
-    return next(new AppError("You cannot send a request to this user.", 403));
+    return next(
+      new AppError(
+        "You cannot send a request to this user.",
+        httpStatus.FORBIDDEN,
+      ),
+    );
   }
 
   const me = await User.findById(myId).select("blockedUsers");
   if (me.blockedUsers.includes(receiverId)) {
     return next(
-      new AppError("Unblock this user before sending a request.", 400),
+      new AppError(
+        "Unblock this user before sending a request.",
+        httpStatus.BAD_REQUEST,
+      ),
     );
   }
 
@@ -44,7 +57,7 @@ const sendFriendRequest = catchAsync(async (req, res, next) => {
     return next(
       new AppError(
         "A friend request already exists between you and this user.",
-        409,
+        httpStatus.CONFLICT,
       ),
     );
   }
@@ -54,7 +67,7 @@ const sendFriendRequest = catchAsync(async (req, res, next) => {
     receiver: receiverId,
   });
 
-  res.status(201).json({ success: true, friendRequest });
+  res.status(httpStatus.CREATED).json({ success: true, friendRequest });
 });
 
 const updateRequestStatus = (newStatus, allowedCaller) =>
@@ -65,7 +78,9 @@ const updateRequestStatus = (newStatus, allowedCaller) =>
     const request = await FriendRequest.findById(requestId);
 
     if (!request) {
-      return next(new AppError("Friend request not found.", 404));
+      return next(
+        new AppError("Friend request not found.", httpStatus.NOT_FOUND),
+      );
     }
 
     const callerField =
@@ -73,20 +88,26 @@ const updateRequestStatus = (newStatus, allowedCaller) =>
 
     if (callerField.toString() !== myId.toString()) {
       return next(
-        new AppError("You are not authorized to update this request.", 403),
+        new AppError(
+          "You are not authorized to update this request.",
+          httpStatus.FORBIDDEN,
+        ),
       );
     }
 
     if (request.status !== "pending") {
       return next(
-        new AppError(`This request is already ${request.status}.`, 400),
+        new AppError(
+          `This request is already ${request.status}.`,
+          httpStatus.BAD_REQUEST,
+        ),
       );
     }
 
     request.status = newStatus;
     await request.save();
 
-    res.status(200).json({ success: true, friendRequest: request });
+    res.status(httpStatus.OK).json({ success: true, friendRequest: request });
   });
 
 const acceptRequest = updateRequestStatus("accepted", "receiver");
@@ -98,7 +119,7 @@ const searchUsers = catchAsync(async (req, res, next) => {
   const { q } = req.query;
 
   if (!q || !q.trim()) {
-    return next(new AppError("Search query required.", 400));
+    return next(new AppError("Search query required.", httpStatus.BAD_REQUEST));
   }
 
   const me = await User.findById(myId).select("blockedUsers");
@@ -144,7 +165,7 @@ const searchUsers = catchAsync(async (req, res, next) => {
     relationship: relationMap.get(u._id.toString()) || { status: "none" },
   }));
 
-  res.status(200).json({ success: true, users: results });
+  res.status(httpStatus.OK).json({ success: true, users: results });
 });
 
 const getIncomingRequests = catchAsync(async (req, res, next) => {
@@ -155,7 +176,7 @@ const getIncomingRequests = catchAsync(async (req, res, next) => {
     status: "pending",
   }).populate("requester", "name avatar email");
 
-  res.status(200).json({ success: true, requests });
+  res.status(httpStatus.OK).json({ success: true, requests });
 });
 
 const getOutgoingRequests = catchAsync(async (req, res, next) => {
@@ -166,7 +187,7 @@ const getOutgoingRequests = catchAsync(async (req, res, next) => {
     status: "pending",
   }).populate("receiver", "name avatar email");
 
-  res.status(200).json({ success: true, requests });
+  res.status(httpStatus.OK).json({ success: true, requests });
 });
 
 const getFriends = catchAsync(async (req, res, next) => {
@@ -183,7 +204,7 @@ const getFriends = catchAsync(async (req, res, next) => {
     r.requester._id.toString() === myId.toString() ? r.receiver : r.requester,
   );
 
-  res.status(200).json({ success: true, friends });
+  res.status(httpStatus.OK).json({ success: true, friends });
 });
 
 const blockUser = catchAsync(async (req, res, next) => {
@@ -191,11 +212,14 @@ const blockUser = catchAsync(async (req, res, next) => {
   const { userId } = req.params;
 
   if (userId === myId.toString()) {
-    return next(new AppError("You cannot block yourself.", 400));
+    return next(
+      new AppError("You cannot block yourself.", httpStatus.BAD_REQUEST),
+    );
   }
 
   const target = await User.findById(userId).select("_id");
-  if (!target) return next(new AppError("User not found.", 404));
+  if (!target)
+    return next(new AppError("User not found.", httpStatus.NOT_FOUND));
 
   const updated = await User.findByIdAndUpdate(
     myId,
@@ -214,7 +238,7 @@ const blockUser = catchAsync(async (req, res, next) => {
     { status: "cancelled" },
   );
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     message: "User blocked.",
     blockedUsers: updated.blockedUsers,
@@ -231,7 +255,7 @@ const unblockUser = catchAsync(async (req, res, next) => {
     { new: true },
   ).select("blockedUsers");
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     message: "User unblocked.",
     blockedUsers: updated.blockedUsers,

@@ -1,3 +1,4 @@
+const httpStatus = require("../constants/httpStatus");
 const FriendRequest = require("../models/FriendRequest");
 const AppError = require("../utils/AppError");
 const catchAsync = require("../utils/catchAsync");
@@ -19,7 +20,7 @@ const requireFriendship = (getTargetUserId) =>
       return next(
         new AppError(
           "You must be friends with this user to message them.",
-          403,
+          httpStatus.FORBIDDEN,
         ),
       );
     }

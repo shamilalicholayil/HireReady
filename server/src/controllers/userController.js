@@ -4,12 +4,13 @@ const AppError = require("../utils/AppError");
 const User = require("../models/User");
 
 const { getIO, getOnlineSocketIds } = require("../config/socket");
+const httpStatus = require("../constants/httpStatus");
 
 const getAllUsers = catchAsync(async (req, res, next) => {
   const { page = 1, limit = 10, search = "", role = "user" } = req.query;
 
   if (!["user", "hr", "admin"].includes(role)) {
-    return next(new AppError("Invalid role filter.", 400));
+    return next(new AppError("Invalid role filter.", httpStatus.BAD_REQUEST));
   }
 
   const filter = { role };
@@ -32,7 +33,7 @@ const getAllUsers = catchAsync(async (req, res, next) => {
     User.countDocuments(filter),
   ]);
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     message: "Users fetched successfully.",
     users,
@@ -44,10 +45,10 @@ const getAllUsers = catchAsync(async (req, res, next) => {
 
 const toggleBlockUser = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.params.id);
-  if (!user) return next(new AppError("User not found.", 404));
+  if (!user) return next(new AppError("User not found.", httpStatus.NOT_FOUND));
 
   if (user.role === "admin") {
-    return next(new AppError("Cannot block an admin.", 403));
+    return next(new AppError("Cannot block an admin.", httpStatus.FORBIDDEN));
   }
 
   user.isBlocked = !user.isBlocked;
@@ -71,7 +72,7 @@ const toggleBlockUser = catchAsync(async (req, res, next) => {
     }
   }
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     message: user.isBlocked
       ? "User blocked successfully."

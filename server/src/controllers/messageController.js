@@ -10,6 +10,7 @@ const Conversation = require("../models/Conversation");
 const User = require("../models/User");
 
 const { getOnlineSocketIds, getIO } = require("../config/socket");
+const httpStatus = require("../constants/httpStatus");
 
 const getConversation = catchAsync(async (req, res, next) => {
   const myId = req.user._id;
@@ -20,7 +21,7 @@ const getConversation = catchAsync(async (req, res, next) => {
     create: false,
   });
   if (!conversation)
-    return res.status(200).json({
+    return res.status(httpStatus.OK).json({
       success: true,
       messages: [],
       conversationId: null,
@@ -39,7 +40,7 @@ const getConversation = catchAsync(async (req, res, next) => {
   const hasMore = messages.length > numericLimit;
   const trimmed = hasMore ? messages.slice(0, numericLimit) : messages;
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     messages: trimmed.reverse(),
     conversationId: conversation._id,
@@ -69,7 +70,7 @@ const getConversationsList = catchAsync(async (req, res, next) => {
     unreadCount: unreadMap.get(conv._id.toString()) || 0,
   }));
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     conversations: conversationsWithUnread,
   });
@@ -80,21 +81,29 @@ const sendMessage = catchAsync(async (req, res, next) => {
   const { receiverId, content, attachments } = req.body;
 
   if (!receiverId) {
-    return next(new AppError("receiverId is required.", 400));
+    return next(
+      new AppError("receiverId is required.", httpStatus.BAD_REQUEST),
+    );
   }
   const hasContent = content?.trim();
   const hasAttachments = Array.isArray(attachments) && attachments.length > 0;
   if (!hasContent && !hasAttachments) {
     return next(
-      new AppError("Message must have content or an attachment.", 400),
+      new AppError(
+        "Message must have content or an attachment.",
+        httpStatus.BAD_REQUEST,
+      ),
     );
   }
   if (receiverId === senderId.toString()) {
-    return next(new AppError("You cannot message yourself.", 400));
+    return next(
+      new AppError("You cannot message yourself.", httpStatus.BAD_REQUEST),
+    );
   }
 
   const receiverExists = await User.exists({ _id: receiverId });
-  if (!receiverExists) return next(new AppError("Receiver not found.", 404));
+  if (!receiverExists)
+    return next(new AppError("Receiver not found.", httpStatus.NOT_FOUND));
 
   const [senderBlockedReceiver, receiverBlockedSender] = await Promise.all([
     isBlocked(senderId, receiverId),
@@ -102,7 +111,9 @@ const sendMessage = catchAsync(async (req, res, next) => {
   ]);
 
   if (senderBlockedReceiver || receiverBlockedSender) {
-    return next(new AppError("You cannot message this user.", 403));
+    return next(
+      new AppError("You cannot message this user.", httpStatus.FORBIDDEN),
+    );
   }
 
   const conversation = await findOrCreateConversation(senderId, receiverId);
@@ -133,7 +144,7 @@ const sendMessage = catchAsync(async (req, res, next) => {
     });
   }
 
-  res.status(201).json({ success: true, message });
+  res.status(httpStatus.CREATED).json({ success: true, message });
 });
 
 const markAsRead = catchAsync(async (req, res, next) => {
@@ -146,7 +157,7 @@ const markAsRead = catchAsync(async (req, res, next) => {
 
   if (!conversation) {
     return res
-      .status(200)
+      .status(httpStatus.OK)
       .json({ success: true, message: "No conversation to mark read." });
   }
 
@@ -177,15 +188,21 @@ const markAsRead = catchAsync(async (req, res, next) => {
     });
   });
 
-  res.status(200).json({ success: true, message: "Messages marked as read." });
+  res
+    .status(httpStatus.OK)
+    .json({ success: true, message: "Messages marked as read." });
 });
 
 const uploadAttachment = catchAsync(async (req, res, next) => {
-  if (!req.file) return next(new AppError("No file provided.", 400));
+  if (!req.file)
+    return next(new AppError("No file provided.", httpStatus.BAD_REQUEST));
 
   const senderId = req.user._id;
   const { receiverId } = req.body;
-  if (!receiverId) return next(new AppError("receiverId is required.", 400));
+  if (!receiverId)
+    return next(
+      new AppError("receiverId is required.", httpStatus.BAD_REQUEST),
+    );
 
   const [senderBlockedReceiver, receiverBlockedSender] = await Promise.all([
     isBlocked(senderId, receiverId),
@@ -193,7 +210,9 @@ const uploadAttachment = catchAsync(async (req, res, next) => {
   ]);
 
   if (senderBlockedReceiver || receiverBlockedSender) {
-    return next(new AppError("You cannot message this user.", 403));
+    return next(
+      new AppError("You cannot message this user.", httpStatus.FORBIDDEN),
+    );
   }
 
   const { mimetype, size } = req.file;
@@ -208,7 +227,7 @@ const uploadAttachment = catchAsync(async (req, res, next) => {
     return next(
       new AppError(
         `File exceeds the ${limit / (1024 * 1024)}MB limit for this file type.`,
-        400,
+        httpStatus.BAD_REQUEST,
       ),
     );
   }
@@ -219,7 +238,7 @@ const uploadAttachment = catchAsync(async (req, res, next) => {
     req.file.mimetype,
   );
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     attachment: {
       url: result.secure_url,
@@ -235,17 +254,21 @@ const downloadAttachment = catchAsync(async (req, res, next) => {
   const userId = req.user._id;
 
   const message = await Message.findById(messageId);
-  if (!message) return next(new AppError("Message not found", 404));
+  if (!message)
+    return next(new AppError("Message not found", httpStatus.NOT_FOUND));
 
   const isParticipant =
     message.sender.toString() === userId.toString() ||
     message.receiver.toString() === userId.toString();
   if (!isParticipant) {
-    return next(new AppError("Not authorized for this attachment", 403));
+    return next(
+      new AppError("Not authorized for this attachment", httpStatus.FORBIDDEN),
+    );
   }
 
   const attachment = message.attachments.id(attachmentId);
-  if (!attachment) return next(new AppError("Attachment not found", 404));
+  if (!attachment)
+    return next(new AppError("Attachment not found", httpStatus.NOT_FOUND));
 
   await streamFileDownload(res, attachment.url, attachment.name);
 });

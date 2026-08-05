@@ -15,11 +15,13 @@ const getMySlots = catchAsync(async (req, res, next) => {
     .sort({ startTime: 1 })
     .populate("job", "title company track");
 
-  res.status(200).json({ status: "success", data: { slots } });
+  res.status(httpStatus.OK).json({ status: "success", data: { slots } });
 });
 
 const getSlotById = catchAsync(async (req, res, next) => {
-  res.status(200).json({ status: "success", data: { slot: req.slot } });
+  res
+    .status(httpStatus.OK)
+    .json({ status: "success", data: { slot: req.slot } });
 });
 
 const updateInterviewStatus = catchAsync(async (req, res, next) => {
@@ -30,7 +32,7 @@ const updateInterviewStatus = catchAsync(async (req, res, next) => {
     return next(
       new AppError(
         `Cannot transition from ${slot.interviewStatus} to ${status}`,
-        400,
+        httpStatus.BAD_REQUEST,
       ),
     );
   }
@@ -42,7 +44,7 @@ const updateInterviewStatus = catchAsync(async (req, res, next) => {
     slot.roomId = `interview-${slot._id}`;
 
   await slot.save();
-  res.status(200).json({ status: "success", data: { slot } });
+  res.status(httpStatus.OK).json({ status: "success", data: { slot } });
 });
 
 module.exports = { getMySlots, getSlotById, updateInterviewStatus };

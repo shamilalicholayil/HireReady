@@ -2,6 +2,7 @@ const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/AppError");
 
 const Question = require("../models/Question");
+const httpStatus = require("../constants/httpStatus");
 
 const createQuestion = catchAsync(async (req, res, next) => {
   const { question, track, difficulty, topics, answerKeyPoints } = req.body;
@@ -15,7 +16,7 @@ const createQuestion = catchAsync(async (req, res, next) => {
     source: "admin",
   });
 
-  res.status(201).json({
+  res.status(httpStatus.CREATED).json({
     success: true,
     question: newQuestion,
     message: "Question created successfully.",
@@ -31,7 +32,7 @@ const getAllQuestions = catchAsync(async (req, res, next) => {
 
   const questions = await Question.find(filter).sort({ createdAt: -1 });
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     count: questions.length,
     questions,
@@ -41,9 +42,10 @@ const getAllQuestions = catchAsync(async (req, res, next) => {
 
 const getQuestionById = catchAsync(async (req, res, next) => {
   const question = await Question.findById(req.params.id);
-  if (!question) return next(new AppError("Question not found.", 404));
+  if (!question)
+    return next(new AppError("Question not found.", httpStatus.NOT_FOUND));
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     question,
     message: "Question fetched successfully.",
@@ -59,9 +61,10 @@ const updateQuestion = catchAsync(async (req, res, next) => {
     { new: true, runValidators: true },
   );
 
-  if (!updated) return next(new AppError("Question not found.", 404));
+  if (!updated)
+    return next(new AppError("Question not found.", httpStatus.NOT_FOUND));
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     question: updated,
     message: "Question updated successfully.",
@@ -70,12 +73,13 @@ const updateQuestion = catchAsync(async (req, res, next) => {
 
 const toggleQuestionStatus = catchAsync(async (req, res, next) => {
   const question = await Question.findById(req.params.id);
-  if (!question) return next(new AppError("Question not found.", 404));
+  if (!question)
+    return next(new AppError("Question not found.", httpStatus.NOT_FOUND));
 
   question.isActive = !question.isActive;
   await question.save();
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     message: question.isActive
       ? "Question restored successfully."

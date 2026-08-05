@@ -29,7 +29,7 @@ const saveAnswer = catchAsync(async (req, res, next) => {
     user: req.user._id,
   });
 
-  res.status(201).json({
+  res.status(httpStatus.CREATED).json({
     success: true,
     answer: newAnswer,
     message: "Answer saved successfully.",
@@ -47,7 +47,7 @@ const getAnswerHistory = catchAsync(async (req, res, next) => {
     .populate("session", "track difficulty type")
     .sort({ createdAt: -1 });
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     count: answers.length,
     answers,

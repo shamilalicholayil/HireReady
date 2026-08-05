@@ -14,6 +14,7 @@ const {
   generateFollowUp,
   generateFinalReport,
 } = require("../services/interview.service");
+const httpStatus = require("../constants/httpStatus");
 
 const QUESTIONS_PER_SESSION = 5;
 const FOLLOW_UP_SCORE_THRESHOLD = 50;
@@ -31,7 +32,10 @@ const startSession = catchAsync(async (req, res, next) => {
 
   if (!questions.length) {
     return next(
-      new AppError("No questions available for this track/difficulty.", 404),
+      new AppError(
+        "No questions available for this track/difficulty.",
+        httpStatus.NOT_FOUND,
+      ),
     );
   }
 
@@ -42,7 +46,7 @@ const startSession = catchAsync(async (req, res, next) => {
     type: "solo",
   });
 
-  res.status(201).json({
+  res.status(httpStatus.CREATED).json({
     success: true,
     session,
     firstQuestion: {
@@ -67,9 +71,12 @@ const submitAnswer = catchAsync(async (req, res, next) => {
   const userId = req.user._id;
 
   const session = await Session.findById(sessionId);
-  if (!session) return next(new AppError("Session not found", 404));
+  if (!session)
+    return next(new AppError("Session not found", httpStatus.NOT_FOUND));
   if (session.user.toString() !== userId.toString()) {
-    return next(new AppError("Not authorized for this session", 403));
+    return next(
+      new AppError("Not authorized for this session", httpStatus.FORBIDDEN),
+    );
   }
 
   let questionText;
@@ -80,7 +87,8 @@ const submitAnswer = catchAsync(async (req, res, next) => {
     answerKeyPoints = req.body.answerKeyPoints || [];
   } else {
     const question = await Question.findById(questionId);
-    if (!question) return next(new AppError("Question not found", 404));
+    if (!question)
+      return next(new AppError("Question not found", httpStatus.NOT_FOUND));
     questionText = question.question;
     answerKeyPoints = question.answerKeyPoints;
   }
@@ -117,7 +125,7 @@ const submitAnswer = catchAsync(async (req, res, next) => {
       missedPoints,
     });
 
-    return res.status(200).json({
+    return res.status(httpStatus.OK).json({
       success: true,
       answer,
       nextStep: "follow_up",
@@ -129,7 +137,7 @@ const submitAnswer = catchAsync(async (req, res, next) => {
     });
   }
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     answer,
     nextStep: "next_question",
@@ -141,14 +149,22 @@ const finishSession = catchAsync(async (req, res, next) => {
   const userId = req.user._id;
 
   const session = await Session.findById(sessionId);
-  if (!session) return next(new AppError("Session not found", 404));
+  if (!session)
+    return next(new AppError("Session not found", httpStatus.NOT_FOUND));
   if (session.user.toString() !== userId.toString()) {
-    return next(new AppError("Not authorized for this session", 403));
+    return next(
+      new AppError("Not authorized for this session", httpStatus.FORBIDDEN),
+    );
   }
 
   const answers = await Answer.find({ session: sessionId });
   if (!answers.length) {
-    return next(new AppError("Cannot finish a session with no answers", 400));
+    return next(
+      new AppError(
+        "Cannot finish a session with no answers",
+        httpStatus.BAD_REQUEST,
+      ),
+    );
   }
 
   const report = await generateFinalReport({ track: session.track, answers });
@@ -190,12 +206,17 @@ const finishSession = catchAsync(async (req, res, next) => {
     await dbSession.commitTransaction();
   } catch (err) {
     await dbSession.abortTransaction();
-    return next(new AppError("Failed to finalize session", 500));
+    return next(
+      new AppError(
+        "Failed to finalize session",
+        httpStatus.INTERNAL_SERVER_ERROR,
+      ),
+    );
   } finally {
     dbSession.endSession();
   }
 
-  res.status(200).json({ success: true, session });
+  res.status(httpStatus.OK).json({ success: true, session });
 });
 
 const getSessionReport = catchAsync(async (req, res, next) => {
@@ -203,27 +224,31 @@ const getSessionReport = catchAsync(async (req, res, next) => {
   const userId = req.user._id;
 
   const session = await Session.findById(sessionId).populate("answers");
-  if (!session) return next(new AppError("Session not found", 404));
+  if (!session)
+    return next(new AppError("Session not found", httpStatus.NOT_FOUND));
   if (session.user.toString() !== userId.toString()) {
-    return next(new AppError("Not authorized for this session", 403));
+    return next(
+      new AppError("Not authorized for this session", httpStatus.FORBIDDEN),
+    );
   }
 
-  res.status(200).json({ success: true, session });
+  res.status(httpStatus.OK).json({ success: true, session });
 });
 
 const getMySessions = catchAsync(async (req, res, next) => {
   const sessions = await Session.find({ user: req.user._id }).sort({
     createdAt: -1,
   });
-  res.status(200).json({ success: true, sessions });
+  res.status(httpStatus.OK).json({ success: true, sessions });
 });
 
 const getQuestionById = catchAsync(async (req, res, next) => {
   const question = await Question.findById(req.params.id).select(
     "question answerKeyPoints",
   );
-  if (!question) return next(new AppError("Question not found", 404));
-  res.status(200).json({ success: true, question });
+  if (!question)
+    return next(new AppError("Question not found", httpStatus.NOT_FOUND));
+  res.status(httpStatus.OK).json({ success: true, question });
 });
 
 module.exports = {

@@ -2,6 +2,7 @@ const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/AppError");
 
 const Tutorial = require("../models/Tutorial");
+const httpStatus = require("../constants/httpStatus");
 
 const createTutorial = catchAsync(async (req, res, next) => {
   const { title, youtubeId, track, description, difficulty, topics } = req.body;
@@ -17,7 +18,7 @@ const createTutorial = catchAsync(async (req, res, next) => {
     addedBy,
   });
 
-  res.status(201).json({
+  res.status(httpStatus.CREATED).json({
     success: true,
     tutorial: newTutorial,
     message: "New Tutorial created successfully.",
@@ -33,7 +34,7 @@ const getAllTutorials = catchAsync(async (req, res, next) => {
 
   const tutorials = await Tutorial.find(filter).sort({ createdAt: -1 });
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     count: tutorials.length,
     tutorials,
@@ -43,13 +44,14 @@ const getAllTutorials = catchAsync(async (req, res, next) => {
 
 const getTutorialById = catchAsync(async (req, res, next) => {
   const tutorial = await Tutorial.findById(req.params.id);
-  if (!tutorial) return next(new AppError("Tutorial not found.", 404));
+  if (!tutorial)
+    return next(new AppError("Tutorial not found.", httpStatus.NOT_FOUND));
 
   if (!tutorial.isActive && req.user?.role !== "admin") {
-    return next(new AppError("Tutorial not found.", 404));
+    return next(new AppError("Tutorial not found.", httpStatus.NOT_FOUND));
   }
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     tutorial,
     message: "Tutorial fetched successfully.",
@@ -65,9 +67,10 @@ const updateTutorial = catchAsync(async (req, res, next) => {
     { new: true, runValidators: true },
   );
 
-  if (!updated) return next(new AppError("Tutorial not found.", 404));
+  if (!updated)
+    return next(new AppError("Tutorial not found.", httpStatus.NOT_FOUND));
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     tutorial: updated,
     message: "Tutorial updated successfully.",
@@ -76,12 +79,13 @@ const updateTutorial = catchAsync(async (req, res, next) => {
 
 const toggleTutorialStatus = catchAsync(async (req, res, next) => {
   const tutorial = await Tutorial.findById(req.params.id);
-  if (!tutorial) return next(new AppError("Tutorial not found.", 404));
+  if (!tutorial)
+    return next(new AppError("Tutorial not found.", httpStatus.NOT_FOUND));
 
   tutorial.isActive = !tutorial.isActive;
   await tutorial.save();
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     message: tutorial.isActive
       ? "Tutorial restored successfully."
@@ -99,7 +103,7 @@ const getPublicTutorials = catchAsync(async (req, res, next) => {
 
   const tutorials = await Tutorial.find(filter).sort({ createdAt: -1 });
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     count: tutorials.length,
     tutorials,

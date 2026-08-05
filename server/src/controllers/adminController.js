@@ -28,7 +28,7 @@ const getDashboardStats = catchAsync(async (req, res) => {
     ]),
   ]);
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     status: "success",
     data: {
       totalUsers,

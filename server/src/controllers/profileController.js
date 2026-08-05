@@ -11,6 +11,7 @@ const {
 } = require("../utils/cloudinaryUpload");
 
 const User = require("../models/User");
+const httpStatus = require("../constants/httpStatus");
 
 const getProfile = catchAsync(async (req, res, next) => {
   const user = req.user._id;
@@ -18,9 +19,10 @@ const getProfile = catchAsync(async (req, res, next) => {
   const userData = await User.findById(user).select(
     "-password -googleId -isBlocked -refreshToken -resetToken -resetTokenExpiry",
   );
-  if (!userData) return next(new AppError("User not fount.", 400));
+  if (!userData)
+    return next(new AppError("User not fount.", httpStatus.BAD_REQUEST));
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     userData,
     message: "User profile fetch successfull.",
@@ -45,9 +47,10 @@ const updateProfile = catchAsync(async (req, res, next) => {
     "-password -googleId -isBlocked -refreshToken -resetToken -resetTokenExpiry",
   );
 
-  if (!updated) return next(new AppError("User not found.", 404));
+  if (!updated)
+    return next(new AppError("User not found.", httpStatus.NOT_FOUND));
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     user: updated,
     message: "Profile updated successfully.",
@@ -55,7 +58,8 @@ const updateProfile = catchAsync(async (req, res, next) => {
 });
 
 const uploadAvatar = catchAsync(async (req, res, next) => {
-  if (!req.file) return next(new AppError("No file uploaded.", 400));
+  if (!req.file)
+    return next(new AppError("No file uploaded.", httpStatus.BAD_REQUEST));
   const buffer = req.file.buffer;
 
   const result = await streamUpload(buffer);
@@ -68,7 +72,7 @@ const uploadAvatar = catchAsync(async (req, res, next) => {
     "-password -googleId -isBlocked -refreshToken -resetToken -resetTokenExpiry",
   );
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     user: updated,
     message: "Avatar updated successfully.",
@@ -76,7 +80,7 @@ const uploadAvatar = catchAsync(async (req, res, next) => {
 });
 
 const uploadResume = catchAsync(async (req, res, next) => {
-  if (!req.file) throw new AppError("No file uploaded", 400);
+  if (!req.file) throw new AppError("No file uploaded", httpStatus.BAD_REQUEST);
 
   const data = await pdfParse(req.file.buffer);
   const text = data.text;
@@ -129,9 +133,10 @@ const uploadResume = catchAsync(async (req, res, next) => {
     "-password -googleId -isBlocked -refreshToken -resetToken -resetTokenExpiry",
   );
 
-  if (!updated) return next(new AppError("User not found.", 404));
+  if (!updated)
+    return next(new AppError("User not found.", httpStatus.NOT_FOUND));
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     resumeUrl: result.secure_url,
     foundSkills,
@@ -142,7 +147,8 @@ const uploadResume = catchAsync(async (req, res, next) => {
 });
 
 const uploadHRDocument = catchAsync(async (req, res, next) => {
-  if (!req.file) return next(new AppError("Document is required.", 400));
+  if (!req.file)
+    return next(new AppError("Document is required.", httpStatus.BAD_REQUEST));
 
   const uploadResult = await streamUploadHRDocument(req.file.buffer, "raw");
 
@@ -152,7 +158,7 @@ const uploadHRDocument = catchAsync(async (req, res, next) => {
   });
   await req.user.save();
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     message: "Document submitted for review.",
     hrDocuments: req.user.hrDocuments,
@@ -162,7 +168,12 @@ const uploadHRDocument = catchAsync(async (req, res, next) => {
 const reapplyHR = catchAsync(async (req, res, next) => {
   const user = req.user;
   if (user.hrStatus !== "rejected") {
-    return next(new AppError("Only rejected applicants can re-apply.", 400));
+    return next(
+      new AppError(
+        "Only rejected applicants can re-apply.",
+        httpStatus.BAD_REQUEST,
+      ),
+    );
   }
 
   if (user.hrRejectionReason) {
@@ -177,7 +188,7 @@ const reapplyHR = catchAsync(async (req, res, next) => {
   user.hrDocuments = [];
   await user.save();
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     message: "Re-application submitted. Please upload a new document.",
     user,
@@ -189,14 +200,16 @@ const downloadResume = catchAsync(async (req, res, next) => {
   const requester = req.user;
 
   const targetUser = await User.findById(userId);
-  if (!targetUser) return next(new AppError("User not found", 404));
+  if (!targetUser)
+    return next(new AppError("User not found", httpStatus.NOT_FOUND));
   if (!targetUser.resumeUrl)
-    return next(new AppError("No resume uploaded", 404));
+    return next(new AppError("No resume uploaded", httpStatus.NOT_FOUND));
 
   const isOwner = targetUser._id.toString() === requester._id.toString();
   const isAuthorized =
     isOwner || requester.role === "hr" || requester.role === "admin";
-  if (!isAuthorized) return next(new AppError("Not authorized", 403));
+  if (!isAuthorized)
+    return next(new AppError("Not authorized", httpStatus.FORBIDDEN));
 
   await streamFileDownload(
     res,

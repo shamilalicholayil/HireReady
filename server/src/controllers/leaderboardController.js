@@ -7,7 +7,9 @@ const getLeaderboard = catchAsync(async (req, res, next) => {
   const { track, difficulty, page = 1, limit = 20 } = req.query;
 
   if (!track || !difficulty) {
-    return next(new AppError("track and difficulty are required", 400));
+    return next(
+      new AppError("track and difficulty are required", httpStatus.BAD_REQUEST),
+    );
   }
 
   const pageNum = Math.max(parseInt(page, 10), 1);
@@ -27,7 +29,7 @@ const getLeaderboard = catchAsync(async (req, res, next) => {
 
   const filtered = results.filter((entry) => entry.user !== null);
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     page: pageNum,
     limit: limitNum,
@@ -41,7 +43,9 @@ const getMyRank = catchAsync(async (req, res, next) => {
   const userId = req.user._id;
 
   if (!track || !difficulty) {
-    return next(new AppError("track and difficulty are required", 400));
+    return next(
+      new AppError("track and difficulty are required", httpStatus.BAD_REQUEST),
+    );
   }
 
   const myScore = await LeaderboardScore.findOne({
@@ -51,7 +55,7 @@ const getMyRank = catchAsync(async (req, res, next) => {
   });
 
   if (!myScore) {
-    return res.status(200).json({
+    return res.status(httpStatus.OK).json({
       success: true,
       rank: null,
       totalScore: 0,
@@ -66,7 +70,7 @@ const getMyRank = catchAsync(async (req, res, next) => {
       totalScore: { $gt: myScore.totalScore },
     })) + 1;
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     rank,
     totalScore: myScore.totalScore,

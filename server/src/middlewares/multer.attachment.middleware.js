@@ -1,5 +1,6 @@
 const multer = require("multer");
 const AppError = require("../utils/AppError");
+const httpStatus = require("../constants/httpStatus");
 
 const storage = multer.memoryStorage();
 
@@ -26,7 +27,10 @@ const fileFilter = (req, file, cb) => {
     cb(null, true);
   } else {
     cb(
-      new AppError(`File type ${file.mimetype} is not supported.`, 400),
+      new AppError(
+        `File type ${file.mimetype} is not supported.`,
+        httpStatus.BAD_REQUEST,
+      ),
       false,
     );
   }

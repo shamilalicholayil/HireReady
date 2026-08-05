@@ -3,12 +3,13 @@ const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/AppError");
 
 const User = require("../models/User");
+const httpStatus = require("../constants/httpStatus");
 
 const getHRApplicants = catchAsync(async (req, res, next) => {
   const { page = 1, limit = 10, search = "", status = "pending" } = req.query;
 
   if (!["pending", "approved", "rejected"].includes(status)) {
-    return next(new AppError("Invalid status filter.", 400));
+    return next(new AppError("Invalid status filter.", httpStatus.BAD_REQUEST));
   }
 
   const filter = { hrStatus: status };
@@ -32,7 +33,7 @@ const getHRApplicants = catchAsync(async (req, res, next) => {
     User.countDocuments(filter),
   ]);
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     message: "HR applicants fetched successfully.",
     applicants,
@@ -44,9 +45,14 @@ const getHRApplicants = catchAsync(async (req, res, next) => {
 
 const approveHR = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.params.id);
-  if (!user) return next(new AppError("User not found.", 404));
+  if (!user) return next(new AppError("User not found.", httpStatus.NOT_FOUND));
   if (user.hrStatus !== "pending") {
-    return next(new AppError("This applicant is not pending review.", 400));
+    return next(
+      new AppError(
+        "This applicant is not pending review.",
+        httpStatus.BAD_REQUEST,
+      ),
+    );
   }
 
   user.role = "hr";
@@ -54,16 +60,21 @@ const approveHR = catchAsync(async (req, res, next) => {
   await user.save();
 
   res
-    .status(200)
+    .status(httpStatus.OK)
     .json({ success: true, message: "HR applicant approved.", user });
 });
 
 const rejectHR = catchAsync(async (req, res, next) => {
   const { reason } = req.body;
   const user = await User.findById(req.params.id);
-  if (!user) return next(new AppError("User not found.", 404));
+  if (!user) return next(new AppError("User not found.", httpStatus.NOT_FOUND));
   if (user.hrStatus !== "pending") {
-    return next(new AppError("This applicant is not pending review.", 400));
+    return next(
+      new AppError(
+        "This applicant is not pending review.",
+        httpStatus.BAD_REQUEST,
+      ),
+    );
   }
 
   user.hrStatus = "rejected";
@@ -71,7 +82,7 @@ const rejectHR = catchAsync(async (req, res, next) => {
   await user.save();
 
   res
-    .status(200)
+    .status(httpStatus.OK)
     .json({ success: true, message: "HR applicant rejected.", user });
 });
 
@@ -79,10 +90,12 @@ const downloadHRDocument = catchAsync(async (req, res, next) => {
   const { userId, documentId } = req.params;
 
   const targetUser = await User.findById(userId);
-  if (!targetUser) return next(new AppError("User not found", 404));
+  if (!targetUser)
+    return next(new AppError("User not found", httpStatus.NOT_FOUND));
 
   const document = targetUser.hrDocuments.id(documentId);
-  if (!document) return next(new AppError("Document not found", 404));
+  if (!document)
+    return next(new AppError("Document not found", httpStatus.NOT_FOUND));
 
   await streamFileDownload(
     res,

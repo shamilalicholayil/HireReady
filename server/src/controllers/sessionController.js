@@ -2,12 +2,15 @@ const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/AppError");
 
 const Session = require("../models/Session.js");
+const httpStatus = require("../constants/httpStatus.js");
 
 const createSession = catchAsync(async (req, res, next) => {
   const { track, difficulty, type } = req.body;
 
   if (!track || !difficulty) {
-    return next(new AppError("track and difficulty are required", 400));
+    return next(
+      new AppError("track and difficulty are required", httpStatus.BAD_REQUEST),
+    );
   }
 
   const session = await Session.create({
@@ -17,7 +20,7 @@ const createSession = catchAsync(async (req, res, next) => {
     type: type || "solo",
   });
 
-  res.status(201).json({ success: true, session });
+  res.status(httpStatus.CREATED).json({ success: true, session });
 });
 
 const getMySessions = catchAsync(async (req, res) => {
@@ -33,10 +36,11 @@ const getSessionById = catchAsync(async (req, res, next) => {
     .populate("answers")
     .lean();
 
-  if (!session) return next(new AppError("Session not found", 404));
+  if (!session)
+    return next(new AppError("Session not found", httpStatus.NOT_FOUND));
 
   if (session.user.toString() !== req.user._id.toString()) {
-    return next(new AppError("Forbidden", 403));
+    return next(new AppError("Forbidden", httpStatus.FORBIDDEN));
   }
 
   res.json({ success: true, session });
