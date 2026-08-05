@@ -1,5 +1,6 @@
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/AppError");
+const escapeRegex = require("../utils/regex");
 
 const Question = require("../models/Question");
 const httpStatus = require("../constants/httpStatus");
@@ -24,18 +25,35 @@ const createQuestion = catchAsync(async (req, res, next) => {
 });
 
 const getAllQuestions = catchAsync(async (req, res, next) => {
-  const { track, difficulty } = req.query;
+  const { track, difficulty, search, page = 1, limit = 10 } = req.query;
 
   const filter = {};
   if (track) filter.track = track;
   if (difficulty) filter.difficulty = difficulty;
+  if (search) {
+    filter.question = { $regex: escapeRegex(search), $options: "i" };
+  }
 
-  const questions = await Question.find(filter).sort({ createdAt: -1 });
+  const skip = (Number(page) - 1) * Number(limit);
+
+  const [questions, total] = await Promise.all([
+    Question.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit)),
+    Question.countDocuments(filter),
+  ]);
 
   res.status(httpStatus.OK).json({
     success: true,
     count: questions.length,
     questions,
+    pagination: {
+      total,
+      page: Number(page),
+      limit: Number(limit),
+      totalPages: Math.ceil(total / Number(limit)),
+    },
     message: "Questions fetched successfully.",
   });
 });

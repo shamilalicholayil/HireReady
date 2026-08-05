@@ -1,18 +1,28 @@
 import { createSlice } from "@reduxjs/toolkit";
 
+const initialPagination = { page: 1, totalPages: 1 };
+
 const friendSlice = createSlice({
   name: "friends",
   initialState: {
     friends: [],
+    friendsPagination: { ...initialPagination },
     incoming: [],
     outgoing: [],
     searchResults: [],
+    searchPagination: { ...initialPagination },
     loading: false,
+    loadingMore: false,
     error: null,
   },
   reducers: {
     setFriends: (state, action) => {
-      state.friends = action.payload;
+      state.friends = action.payload.friends;
+      state.friendsPagination = action.payload.pagination;
+    },
+    appendFriends: (state, action) => {
+      state.friends.push(...action.payload.friends);
+      state.friendsPagination = action.payload.pagination;
     },
     setIncoming: (state, action) => {
       state.incoming = action.payload;
@@ -21,7 +31,12 @@ const friendSlice = createSlice({
       state.outgoing = action.payload;
     },
     setSearchResults: (state, action) => {
-      state.searchResults = action.payload;
+      state.searchResults = action.payload.users;
+      state.searchPagination = action.payload.pagination;
+    },
+    appendSearchResults: (state, action) => {
+      state.searchResults.push(...action.payload.users);
+      state.searchPagination = action.payload.pagination;
     },
     removeIncoming: (state, action) => {
       state.incoming = state.incoming.filter((r) => r._id !== action.payload);
@@ -40,6 +55,9 @@ const friendSlice = createSlice({
     setFriendsLoading: (state, action) => {
       state.loading = action.payload;
     },
+    setFriendsLoadingMore: (state, action) => {
+      state.loadingMore = action.payload;
+    },
     setFriendsError: (state, action) => {
       state.error = action.payload;
     },
@@ -48,14 +66,17 @@ const friendSlice = createSlice({
 
 export const {
   setFriends,
+  appendFriends,
   setIncoming,
   setOutgoing,
   setSearchResults,
+  appendSearchResults,
   removeIncoming,
   removeOutgoing,
   addFriend,
   updateFriendLastSeen,
   setFriendsLoading,
+  setFriendsLoadingMore,
   setFriendsError,
 } = friendSlice.actions;
 

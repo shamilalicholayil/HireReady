@@ -1,15 +1,16 @@
 import axiosInstance from "./axiosInstance";
 
-export const searchUsers = (q) =>
-  axiosInstance.get(`/friend-requests/search`, { params: { q } });
+export const searchUsers = (q, page = 1, limit = 10) =>
+  axiosInstance.get(`/friend-requests/search`, { params: { q, page, limit } });
 
 export const getIncomingRequests = () =>
-  axiosInstance.get("/friend-requests/incoming");
+  axiosInstance.get("/friend-requests/incoming", { params: { limit: 50 } });
 
 export const getOutgoingRequests = () =>
-  axiosInstance.get("/friend-requests/outgoing");
+  axiosInstance.get("/friend-requests/outgoing", { params: { limit: 50 } });
 
-export const getFriends = () => axiosInstance.get("/friend-requests/friends");
+export const getFriends = (page = 1, limit = 10) =>
+  axiosInstance.get("/friend-requests/friends", { params: { page, limit } });
 
 export const sendFriendRequest = (receiverId) =>
   axiosInstance.post("/friend-requests", { receiverId });

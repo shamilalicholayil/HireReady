@@ -1,5 +1,6 @@
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/AppError");
+const escapeRegex = require("../utils/regex");
 
 const Tutorial = require("../models/Tutorial");
 
@@ -28,18 +29,35 @@ const createTutorial = catchAsync(async (req, res, next) => {
 });
 
 const getAllTutorials = catchAsync(async (req, res, next) => {
-  const { track, difficulty } = req.query;
+  const { track, difficulty, search, page = 1, limit = 10 } = req.query;
 
   const filter = {};
   if (track) filter.track = track;
   if (difficulty) filter.difficulty = difficulty;
+  if (search) {
+    filter.title = { $regex: escapeRegex(search), $options: "i" };
+  }
 
-  const tutorials = await Tutorial.find(filter).sort({ createdAt: -1 });
+  const skip = (Number(page) - 1) * Number(limit);
+
+  const [tutorials, total] = await Promise.all([
+    Tutorial.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit)),
+    Tutorial.countDocuments(filter),
+  ]);
 
   res.status(httpStatus.OK).json({
     success: true,
     count: tutorials.length,
     tutorials,
+    pagination: {
+      total,
+      page: Number(page),
+      limit: Number(limit),
+      totalPages: Math.ceil(total / Number(limit)),
+    },
     message: "Tutorials fetched successfully.",
   });
 });

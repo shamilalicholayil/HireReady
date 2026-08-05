@@ -118,20 +118,28 @@ const cancelRequest = updateRequestStatus("cancelled", "requester");
 
 const searchUsers = catchAsync(async (req, res, next) => {
   const myId = req.user._id;
-  const { q } = req.query;
+  const { q, page = 1, limit = 10 } = req.query;
 
   if (!q || !q.trim()) {
     return next(new AppError("Search query required.", httpStatus.BAD_REQUEST));
   }
 
-  const me = await User.findById(myId).select("blockedUsers");
-
-  const users = await User.find({
+  const filter = {
     _id: { $ne: myId },
     role: ROLES.USER,
     blockedUsers: { $ne: myId },
     name: { $regex: q.trim(), $options: "i" },
-  }).select("name avatar email");
+  };
+
+  const skip = (Number(page) - 1) * Number(limit);
+
+  const [users, total] = await Promise.all([
+    User.find(filter)
+      .select("name avatar email")
+      .skip(skip)
+      .limit(Number(limit)),
+    User.countDocuments(filter),
+  ]);
 
   const userIds = users.map((u) => u._id);
 
@@ -167,46 +175,108 @@ const searchUsers = catchAsync(async (req, res, next) => {
     relationship: relationMap.get(u._id.toString()) || { status: "none" },
   }));
 
-  res.status(httpStatus.OK).json({ success: true, users: results });
+  res.status(httpStatus.OK).json({
+    success: true,
+    users: results,
+    pagination: {
+      total,
+      page: Number(page),
+      limit: Number(limit),
+      totalPages: Math.ceil(total / Number(limit)),
+    },
+  });
 });
 
 const getIncomingRequests = catchAsync(async (req, res, next) => {
   const myId = req.user._id;
+  const { page = 1, limit = 10 } = req.query;
+  const skip = (Number(page) - 1) * Number(limit);
 
-  const requests = await FriendRequest.find({
-    receiver: myId,
-    status: "pending",
-  }).populate("requester", "name avatar email");
+  const filter = { receiver: myId, status: "pending" };
 
-  res.status(httpStatus.OK).json({ success: true, requests });
+  const [requests, total] = await Promise.all([
+    FriendRequest.find(filter)
+      .populate("requester", "name avatar email")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit)),
+    FriendRequest.countDocuments(filter),
+  ]);
+
+  res.status(httpStatus.OK).json({
+    success: true,
+    requests,
+    pagination: {
+      total,
+      page: Number(page),
+      limit: Number(limit),
+      totalPages: Math.ceil(total / Number(limit)),
+    },
+  });
 });
 
 const getOutgoingRequests = catchAsync(async (req, res, next) => {
   const myId = req.user._id;
+  const { page = 1, limit = 10 } = req.query;
+  const skip = (Number(page) - 1) * Number(limit);
 
-  const requests = await FriendRequest.find({
-    requester: myId,
-    status: "pending",
-  }).populate("receiver", "name avatar email");
+  const filter = { requester: myId, status: "pending" };
 
-  res.status(httpStatus.OK).json({ success: true, requests });
+  const [requests, total] = await Promise.all([
+    FriendRequest.find(filter)
+      .populate("receiver", "name avatar email")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit)),
+    FriendRequest.countDocuments(filter),
+  ]);
+
+  res.status(httpStatus.OK).json({
+    success: true,
+    requests,
+    pagination: {
+      total,
+      page: Number(page),
+      limit: Number(limit),
+      totalPages: Math.ceil(total / Number(limit)),
+    },
+  });
 });
 
 const getFriends = catchAsync(async (req, res, next) => {
   const myId = req.user._id;
+  const { page = 1, limit = 10 } = req.query;
+  const skip = (Number(page) - 1) * Number(limit);
 
-  const accepted = await FriendRequest.find({
+  const filter = {
     $or: [{ requester: myId }, { receiver: myId }],
     status: "accepted",
-  })
-    .populate("requester", "name avatar email lastSeen")
-    .populate("receiver", "name avatar email lastSeen");
+  };
+
+  const [accepted, total] = await Promise.all([
+    FriendRequest.find(filter)
+      .populate("requester", "name avatar email lastSeen")
+      .populate("receiver", "name avatar email lastSeen")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit)),
+    FriendRequest.countDocuments(filter),
+  ]);
 
   const friends = accepted.map((r) =>
     r.requester._id.toString() === myId.toString() ? r.receiver : r.requester,
   );
 
-  res.status(httpStatus.OK).json({ success: true, friends });
+  res.status(httpStatus.OK).json({
+    success: true,
+    friends,
+    pagination: {
+      total,
+      page: Number(page),
+      limit: Number(limit),
+      totalPages: Math.ceil(total / Number(limit)),
+    },
+  });
 });
 
 const blockUser = catchAsync(async (req, res, next) => {

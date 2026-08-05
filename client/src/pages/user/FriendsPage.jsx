@@ -13,15 +13,18 @@ import {
 } from "../../api/friendApi";
 import {
   setFriends,
+  appendFriends,
   setIncoming,
   setOutgoing,
   setSearchResults,
+  appendSearchResults,
   removeIncoming,
   removeOutgoing,
   addFriend,
   setFriendsLoading,
+  setFriendsLoadingMore,
 } from "../../features/friend/friendSlice";
-import useInfiniteReveal from "../../hooks/useInfiniteReveal";
+import useLoadMoreOnScroll from "../../hooks/useLoadMoreOnScroll";
 
 const TABS = [
   { key: "friends", label: "Friends" },
@@ -31,25 +34,45 @@ const TABS = [
 
 export default function FriendsPage() {
   const dispatch = useDispatch();
-  const { friends, incoming, outgoing, searchResults, loading } = useSelector(
-    (state) => state.friends,
-  );
+  const {
+    friends,
+    friendsPagination,
+    incoming,
+    outgoing,
+    searchResults,
+    searchPagination,
+    loading,
+    loadingMore,
+  } = useSelector((state) => state.friends);
 
   const [activeTab, setActiveTab] = useState("friends");
   const [query, setQuery] = useState("");
   const debounceRef = useRef(null);
 
-  const loadFriends = useCallback(async () => {
-    dispatch(setFriendsLoading(true));
-    try {
-      const res = await getFriends();
-      dispatch(setFriends(res.data.friends));
-    } catch {
-      toast.error("Couldn't load your friends list.");
-    } finally {
-      dispatch(setFriendsLoading(false));
-    }
-  }, [dispatch]);
+  const loadFriends = useCallback(
+    async (page = 1) => {
+      dispatch(
+        page === 1 ? setFriendsLoading(true) : setFriendsLoadingMore(true),
+      );
+      try {
+        const res = await getFriends(page);
+        const action = page === 1 ? setFriends : appendFriends;
+        dispatch(
+          action({
+            friends: res.data.friends,
+            pagination: res.data.pagination,
+          }),
+        );
+      } catch {
+        toast.error("Couldn't load your friends list.");
+      } finally {
+        dispatch(
+          page === 1 ? setFriendsLoading(false) : setFriendsLoadingMore(false),
+        );
+      }
+    },
+    [dispatch],
+  );
 
   const loadRequests = useCallback(async () => {
     dispatch(setFriendsLoading(true));
@@ -67,40 +90,72 @@ export default function FriendsPage() {
     }
   }, [dispatch]);
 
+  const runSearch = useCallback(
+    async (q, page = 1) => {
+      dispatch(
+        page === 1 ? setFriendsLoading(true) : setFriendsLoadingMore(true),
+      );
+      try {
+        const res = await searchUsers(q, page);
+        const action = page === 1 ? setSearchResults : appendSearchResults;
+        dispatch(
+          action({ users: res.data.users, pagination: res.data.pagination }),
+        );
+      } catch {
+        toast.error("Search failed.");
+      } finally {
+        dispatch(
+          page === 1 ? setFriendsLoading(false) : setFriendsLoadingMore(false),
+        );
+      }
+    },
+    [dispatch],
+  );
+
   useEffect(() => {
-    if (activeTab === "friends") loadFriends();
+    if (activeTab === "friends") loadFriends(1);
     if (activeTab === "requests") loadRequests();
   }, [activeTab, loadFriends, loadRequests]);
 
   useEffect(() => {
     if (activeTab !== "search") return;
     if (!query.trim()) {
-      dispatch(setSearchResults([]));
+      dispatch(
+        setSearchResults({ users: [], pagination: { page: 1, totalPages: 1 } }),
+      );
       return;
     }
     clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
-      dispatch(setFriendsLoading(true));
-      try {
-        const res = await searchUsers(query.trim());
-        dispatch(setSearchResults(res.data.users));
-      } catch {
-        toast.error("Search failed.");
-      } finally {
-        dispatch(setFriendsLoading(false));
-      }
-    }, 400);
+    debounceRef.current = setTimeout(() => runSearch(query.trim(), 1), 400);
     return () => clearTimeout(debounceRef.current);
-  }, [query, activeTab, dispatch]);
+  }, [query, activeTab, dispatch, runSearch]);
+
+  const friendsHasMore = friendsPagination.page < friendsPagination.totalPages;
+  const searchHasMore = searchPagination.page < searchPagination.totalPages;
+
+  const friendsSentinelRef = useLoadMoreOnScroll({
+    hasMore: activeTab === "friends" && friendsHasMore,
+    loading: loadingMore,
+    onLoadMore: useCallback(
+      () => loadFriends(friendsPagination.page + 1),
+      [loadFriends, friendsPagination.page],
+    ),
+  });
+
+  const searchSentinelRef = useLoadMoreOnScroll({
+    hasMore: activeTab === "search" && searchHasMore,
+    loading: loadingMore,
+    onLoadMore: useCallback(
+      () => runSearch(query.trim(), searchPagination.page + 1),
+      [runSearch, query, searchPagination.page],
+    ),
+  });
 
   const handleSend = async (userId) => {
     try {
       await sendFriendRequest(userId);
       toast.success("Friend request sent.");
-      if (query.trim()) {
-        const res = await searchUsers(query.trim());
-        dispatch(setSearchResults(res.data.users));
-      }
+      if (query.trim()) runSearch(query.trim(), 1);
     } catch (err) {
       toast.error(err.response?.data?.message || "Couldn't send request.");
     }
@@ -112,10 +167,7 @@ export default function FriendsPage() {
       dispatch(removeIncoming(requestId));
       dispatch(addFriend(requesterOrUser));
       toast.success(`You and ${requesterOrUser.name} are now friends.`);
-      if (activeTab === "search" && query.trim()) {
-        const res = await searchUsers(query.trim());
-        dispatch(setSearchResults(res.data.users));
-      }
+      if (activeTab === "search" && query.trim()) runSearch(query.trim(), 1);
     } catch (err) {
       toast.error(err.response?.data?.message || "Couldn't accept request.");
     }
@@ -136,25 +188,11 @@ export default function FriendsPage() {
       await cancelRequest(requestId);
       dispatch(removeOutgoing(requestId));
       toast("Request cancelled.");
-      if (activeTab === "search" && query.trim()) {
-        const res = await searchUsers(query.trim());
-        dispatch(setSearchResults(res.data.users));
-      }
+      if (activeTab === "search" && query.trim()) runSearch(query.trim(), 1);
     } catch (err) {
       toast.error(err.response?.data?.message || "Couldn't cancel request.");
     }
   };
-
-  const activeList =
-    activeTab === "friends"
-      ? friends
-      : activeTab === "search"
-        ? searchResults
-        : null;
-
-  const { visibleCount, sentinelRef } = useInfiniteReveal(
-    activeList?.length || 0,
-  );
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
@@ -206,7 +244,7 @@ export default function FriendsPage() {
 
       {activeTab === "friends" && (
         <ul className="space-y-2">
-          {friends.slice(0, visibleCount).map((f) => (
+          {friends.map((f) => (
             <UserRow key={f._id} user={f} />
           ))}
         </ul>
@@ -218,7 +256,7 @@ export default function FriendsPage() {
             <EmptyState text={`No one found matching "${query}".`} />
           )}
           <ul className="space-y-2">
-            {searchResults.slice(0, visibleCount).map((u) => (
+            {searchResults.map((u) => (
               <UserRow
                 key={u._id}
                 user={u}
@@ -300,10 +338,17 @@ export default function FriendsPage() {
         </div>
       )}
 
-      {(activeTab === "friends" || activeTab === "search") &&
-        visibleCount < (activeList?.length || 0) && (
-          <div ref={sentinelRef} className="h-8" />
-        )}
+      {activeTab === "friends" && friendsHasMore && (
+        <div ref={friendsSentinelRef} className="h-8" />
+      )}
+      {activeTab === "search" && searchHasMore && (
+        <div ref={searchSentinelRef} className="h-8" />
+      )}
+      {loadingMore && (
+        <p className="text-xs text-center text-[var(--text-secondary)] py-2">
+          Loading more...
+        </p>
+      )}
     </div>
   );
 }
@@ -318,7 +363,6 @@ function RelationshipAction({ user, onSend, onAccept, onCancel }) {
       </span>
     );
   }
-
   if (status === "outgoing") {
     return (
       <button
@@ -329,7 +373,6 @@ function RelationshipAction({ user, onSend, onAccept, onCancel }) {
       </button>
     );
   }
-
   if (status === "incoming") {
     return (
       <button
@@ -340,7 +383,6 @@ function RelationshipAction({ user, onSend, onAccept, onCancel }) {
       </button>
     );
   }
-
   return (
     <button
       onClick={() => onSend(user._id)}
