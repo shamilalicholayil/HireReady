@@ -58,7 +58,7 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            cd ~/hireready
+            cd ~/HireReady || exit 1
             docker compose pull
             docker compose up -d
             docker image prune -f
