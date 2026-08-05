@@ -16,12 +16,18 @@ const {
 
 const User = require("../models/User");
 
+const httpStatus = require("../constants/httpStatus");
+const {
+  getRefreshTokenCookieOptions,
+  getRefreshTokenClearCookieOptions,
+} = require("../constants/cookieOptions");
+
 const register = catchAsync(async (req, res, next) => {
   const { name, email, password } = req.body;
 
   const user = await User.findOne({ email });
   if (user) {
-    return next(new AppError("Email already in use", 400));
+    return next(new AppError("Email already in use", httpStatus.BAD_REQUEST));
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
@@ -53,7 +59,7 @@ const register = catchAsync(async (req, res, next) => {
     `,
   });
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     message: "Success. Otp has been sent",
   });
@@ -63,12 +69,13 @@ const verifyOtp = catchAsync(async (req, res, next) => {
   const { email, otp } = req.body;
 
   const cachedData = await client.get(`otp:${email}`);
-  if (!cachedData) return next(new AppError("Otp expired.", 400));
+  if (!cachedData)
+    return next(new AppError("Otp expired.", httpStatus.BAD_REQUEST));
 
   const pendingUser = JSON.parse(cachedData);
 
   if (String(otp) !== String(pendingUser.otp))
-    return next(new AppError("Invalid otp.", 400));
+    return next(new AppError("Invalid otp.", httpStatus.BAD_REQUEST));
 
   const newUser = await User.create({
     name: pendingUser.name,
@@ -83,14 +90,13 @@ const verifyOtp = catchAsync(async (req, res, next) => {
 
   const accessToken = generateAccessToken(newUser);
 
-  res.cookie("refreshToken", newUser.refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  });
+  res.cookie(
+    "refreshToken",
+    newUser.refreshToken,
+    getRefreshTokenCookieOptions(),
+  );
 
-  res.status(201).json({
+  res.status(httpStatus.CREATED).json({
     success: true,
     accessToken,
     user: {
@@ -107,31 +113,34 @@ const login = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
 
   const user = await User.findOne({ email });
-  if (!user) return next(new AppError("Invalid email or password.", 400));
+  if (!user)
+    return next(
+      new AppError("Invalid email or password.", httpStatus.BAD_REQUEST),
+    );
 
   if (user.isBlocked) {
     return next(
-      new AppError("Your account has been blocked. Contact support.", 403),
+      new AppError(
+        "Your account has been blocked. Contact support.",
+        httpStatus.FORBIDDEN,
+      ),
     );
   }
 
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
-    return next(new AppError("Invalid email or password", 400));
+    return next(
+      new AppError("Invalid email or password", httpStatus.BAD_REQUEST),
+    );
   }
 
   const accessToken = generateAccessToken(user);
   user.refreshToken = generateRefreshToken(user);
   await user.save();
 
-  res.cookie("refreshToken", user.refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  });
+  res.cookie("refreshToken", user.refreshToken, getRefreshTokenCookieOptions());
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     accessToken,
     user: {
@@ -154,14 +163,8 @@ const login = catchAsync(async (req, res, next) => {
 const logout = catchAsync(async (req, res, next) => {
   const token = req.cookies.refreshToken;
 
-  const cookieOptions = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-  };
-
   if (!token) {
-    return res.status(200).json({
+    return res.status(httpStatus.OK).json({
       success: true,
       message: "User is already logged out.",
     });
@@ -173,8 +176,8 @@ const logout = catchAsync(async (req, res, next) => {
     await user.save();
   }
 
-  res.clearCookie("refreshToken");
-  res.status(200).json({
+  res.clearCookie("refreshToken", getRefreshTokenClearCookieOptions());
+  res.status(httpStatus.OK).json({
     success: true,
     message: "Logout successfull.",
   });
@@ -183,28 +186,23 @@ const logout = catchAsync(async (req, res, next) => {
 const refreshToken = catchAsync(async (req, res, next) => {
   const token = req.cookies.refreshToken;
   if (!token) {
-    return next(new AppError("Not authorized", 401));
+    return next(new AppError("Not authorized", httpStatus.UNAUTHORIZED));
   }
 
   const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
 
   const user = await User.findById(decoded.id);
   if (!user || user.refreshToken !== token) {
-    return next(new AppError("Not authorized", 401));
+    return next(new AppError("Not authorized", httpStatus.UNAUTHORIZED));
   }
 
   const accessToken = generateAccessToken(user);
   user.refreshToken = generateRefreshToken(user);
   await user.save();
 
-  res.cookie("refreshToken", user.refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  });
+  res.cookie("refreshToken", user.refreshToken, getRefreshTokenCookieOptions());
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     accessToken,
     message: "Token refresh successfull.",
@@ -217,12 +215,7 @@ const googleCallback = catchAsync(async (req, res, next) => {
   req.user.refreshToken = refreshToken;
   await req.user.save();
 
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  });
+  res.cookie("refreshToken", refreshToken, getRefreshTokenCookieOptions());
 
   res.redirect(`${process.env.CLIENT_URL}/auth/callback?token=${accessToken}`);
 });
@@ -252,7 +245,7 @@ const forgotPassword = catchAsync(async (req, res, next) => {
     });
   }
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     message: "If that email is registered, a reset link has been sent.",
   });
@@ -268,7 +261,8 @@ const resetPassword = catchAsync(async (req, res, next) => {
     resetToken: hashedToken,
     resetTokenExpiry: { $gt: Date.now() },
   });
-  if (!user) return next(new AppError("Invalid token.", 400));
+  if (!user)
+    return next(new AppError("Invalid token.", httpStatus.BAD_REQUEST));
 
   const hashedPassword = await bcrypt.hash(newPassword, 10);
 
@@ -277,7 +271,7 @@ const resetPassword = catchAsync(async (req, res, next) => {
   user.resetTokenExpiry = null;
   await user.save();
 
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
     message: "Password reset successful.",
   });
@@ -287,11 +281,14 @@ const registerHR = catchAsync(async (req, res, next) => {
   const { name, email, password, companyName } = req.body;
 
   if (!name || !email || !password || !companyName) {
-    return next(new AppError("All fields are required.", 400));
+    return next(
+      new AppError("All fields are required.", httpStatus.BAD_REQUEST),
+    );
   }
 
   const user = await User.findOne({ email });
-  if (user) return next(new AppError("Email already in use", 400));
+  if (user)
+    return next(new AppError("Email already in use", httpStatus.BAD_REQUEST));
 
   const hashedPassword = await bcrypt.hash(password, 10);
   const otp = Math.floor(100000 + Math.random() * 900000);
@@ -310,7 +307,7 @@ const registerHR = catchAsync(async (req, res, next) => {
   });
 
   res
-    .status(200)
+    .status(httpStatus.OK)
     .json({ success: true, message: "Success. Otp has been sent" });
 });
 
@@ -318,11 +315,12 @@ const verifyOtpHR = catchAsync(async (req, res, next) => {
   const { email, otp } = req.body;
 
   const cachedData = await client.get(`otp:${email}`);
-  if (!cachedData) return next(new AppError("Otp expired.", 400));
+  if (!cachedData)
+    return next(new AppError("Otp expired.", httpStatus.BAD_REQUEST));
 
   const pendingUser = JSON.parse(cachedData);
   if (String(otp) !== String(pendingUser.otp))
-    return next(new AppError("Invalid otp.", 400));
+    return next(new AppError("Invalid otp.", httpStatus.BAD_REQUEST));
 
   const newUser = await User.create({
     name: pendingUser.name,
@@ -338,14 +336,13 @@ const verifyOtpHR = catchAsync(async (req, res, next) => {
   await client.del(`otp:${email}`);
 
   const accessToken = generateAccessToken(newUser);
-  res.cookie("refreshToken", newUser.refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  });
+  res.cookie(
+    "refreshToken",
+    newUser.refreshToken,
+    getRefreshTokenCookieOptions(),
+  );
 
-  res.status(201).json({
+  res.status(httpStatus.CREATED).json({
     success: true,
     accessToken,
     user: {
