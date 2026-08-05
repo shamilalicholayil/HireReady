@@ -3,6 +3,7 @@ const { Router } = require("express");
 const router = Router();
 
 const validate = require("../../middlewares/validate.middleware");
+const createRateLimiter = require("../../middlewares/rateLimiter.middleware");
 const {
   registerSchema,
   verifyOtpSchema,
@@ -27,20 +28,48 @@ const {
   verifyOtpHR,
 } = require("../../controllers/authController");
 
-router.post("/register", validate(registerSchema), register);
-router.post("/register/verify", validate(verifyOtpSchema), verifyOtp);
+const loginLimiter = createRateLimiter({
+  keyPrefix: "rl_login",
+  points: 5,
+  duration: 900, // 15 min
+  keyBy: "ip",
+});
 
-router.post("/register-hr", validate(registerHRSchema), registerHR);
-router.post("/register-hr/verify", validate(verifyOtpHRSchema), verifyOtpHR);
+router.post("/register", loginLimiter, validate(registerSchema), register);
+router.post(
+  "/register/verify",
+  loginLimiter,
+  validate(verifyOtpSchema),
+  verifyOtp,
+);
 
-router.post("/login", validate(loginSchema), login);
+router.post(
+  "/register-hr",
+  loginLimiter,
+  validate(registerHRSchema),
+  registerHR,
+);
+router.post(
+  "/register-hr/verify",
+  loginLimiter,
+  validate(verifyOtpHRSchema),
+  verifyOtpHR,
+);
+
+router.post("/login", loginLimiter, validate(loginSchema), login);
 router.post("/logout", logout);
 
 router.post("/refresh", refreshToken);
 
-router.post("/forgot-password", validate(forgotPasswordSchema), forgotPassword);
+router.post(
+  "/forgot-password",
+  loginLimiter,
+  validate(forgotPasswordSchema),
+  forgotPassword,
+);
 router.post(
   "/reset-password/:token",
+  loginLimiter,
   validate(resetPasswordSchema),
   resetPassword,
 );

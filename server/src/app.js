@@ -11,8 +11,18 @@ require("./config/passport");
 const { corsAllowedOrigins } = require("../src/config/env");
 
 const logger = require("./utils/logger");
+
 const errorMiddleware = require("./middlewares/error.middleware");
+const createRateLimiter = require("./middlewares/rateLimiter.middleware");
+
 const routes = require("./routes/v1/index");
+
+const globalLimiter = createRateLimiter({
+  keyPrefix: "rl_global",
+  points: 100,
+  duration: 900,
+  keyBy: "ip",
+});
 
 const app = express();
 
@@ -36,7 +46,7 @@ app.use(expressMongoSanitize());
 app.use(xssClean());
 app.use(passport.initialize());
 
-app.use("/api/v1", routes);
+app.use("/api/v1", globalLimiter, routes);
 
 app.get("/api/v1/health", (req, res) => {
   res.json({

@@ -1,8 +1,11 @@
 const ai = require("../config/gemini");
 const { mcpToTool } = require("@google/genai");
+
 const { getMcpClient } = require("../mcp/mcpClient");
+
 const Question = require("../models/Question");
 const Answer = require("../models/Answer");
+
 const AppError = require("../utils/AppError");
 
 const GEMINI_MODEL_FLASH = process.env.GEMINI_MODEL_FLASH || "gemini-3.6-flash";
@@ -16,8 +19,11 @@ const withRetry = async (fn, retries = 3, delayMs = 1000) => {
     } catch (err) {
       const isRetryable =
         err?.status === 503 ||
+        err?.status === 429 ||
         err?.message?.includes("UNAVAILABLE") ||
-        err?.message?.includes("high demand");
+        err?.message?.includes("high demand") ||
+        err?.message?.includes("RESOURCE_EXHAUSTED") ||
+        err?.message?.includes("quota");
       if (!isRetryable || attempt === retries) throw err;
       await new Promise((resolve) => setTimeout(resolve, delayMs * attempt));
     }
