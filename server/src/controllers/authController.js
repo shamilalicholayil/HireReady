@@ -16,6 +16,8 @@ const {
 
 const User = require("../models/User");
 
+const ROLES = require("../constants/roles");
+const HR_STATUS = require("../constants/hrStatus");
 const httpStatus = require("../constants/httpStatus");
 const {
   getRefreshTokenCookieOptions,
@@ -327,8 +329,8 @@ const verifyOtpHR = catchAsync(async (req, res, next) => {
     email: pendingUser.email,
     password: pendingUser.password,
     companyName: pendingUser.companyName,
-    role: "user",
-    hrStatus: "pending",
+    role: ROLES.USER,
+    hrStatus: HR_STATUS.PENDING,
   });
 
   newUser.refreshToken = generateRefreshToken(newUser);

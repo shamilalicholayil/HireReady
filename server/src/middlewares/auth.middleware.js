@@ -2,7 +2,9 @@ const jwt = require("jsonwebtoken");
 const AppError = require("../utils/AppError");
 
 const User = require("../models/User");
+
 const httpStatus = require("../constants/httpStatus");
+const ROLES = require("../constants/roles");
 
 const auth = async (req, res, next) => {
   try {
@@ -32,7 +34,7 @@ const auth = async (req, res, next) => {
 };
 
 const isHR = (req, res, next) => {
-  if (req.user.role !== "hr") {
+  if (req.user.role !== ROLES.HR) {
     return next(
       new AppError("You do not have HR access.", httpStatus.FORBIDDEN),
     );
@@ -41,7 +43,7 @@ const isHR = (req, res, next) => {
 };
 
 const isAdmin = (req, res, next) => {
-  if (req.user.role !== "admin") {
+  if (req.user.role !== ROLES.ADMIN) {
     return next(
       new AppError("Access denied. Admins only.", httpStatus.FORBIDDEN),
     );

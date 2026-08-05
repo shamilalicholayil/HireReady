@@ -3,12 +3,24 @@ const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/AppError");
 
 const User = require("../models/User");
+
 const httpStatus = require("../constants/httpStatus");
+const ROLES = require("../constants/roles");
+const HR_STATUS = require("../constants/hrStatus");
 
 const getHRApplicants = catchAsync(async (req, res, next) => {
-  const { page = 1, limit = 10, search = "", status = "pending" } = req.query;
+  const {
+    page = 1,
+    limit = 10,
+    search = "",
+    status = HR_STATUS.PENDING,
+  } = req.query;
 
-  if (!["pending", "approved", "rejected"].includes(status)) {
+  if (
+    ![HR_STATUS.PENDING, HR_STATUS.APPROVED, HR_STATUS.REJECTED].includes(
+      status,
+    )
+  ) {
     return next(new AppError("Invalid status filter.", httpStatus.BAD_REQUEST));
   }
 
@@ -46,7 +58,7 @@ const getHRApplicants = catchAsync(async (req, res, next) => {
 const approveHR = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.params.id);
   if (!user) return next(new AppError("User not found.", httpStatus.NOT_FOUND));
-  if (user.hrStatus !== "pending") {
+  if (user.hrStatus !== HR_STATUS.PENDING) {
     return next(
       new AppError(
         "This applicant is not pending review.",
@@ -55,8 +67,8 @@ const approveHR = catchAsync(async (req, res, next) => {
     );
   }
 
-  user.role = "hr";
-  user.hrStatus = "approved";
+  user.role = ROLES.HR;
+  user.hrStatus = HR_STATUS.APPROVED;
   await user.save();
 
   res
@@ -68,7 +80,7 @@ const rejectHR = catchAsync(async (req, res, next) => {
   const { reason } = req.body;
   const user = await User.findById(req.params.id);
   if (!user) return next(new AppError("User not found.", httpStatus.NOT_FOUND));
-  if (user.hrStatus !== "pending") {
+  if (user.hrStatus !== HR_STATUS.PENDING) {
     return next(
       new AppError(
         "This applicant is not pending review.",
@@ -77,7 +89,7 @@ const rejectHR = catchAsync(async (req, res, next) => {
     );
   }
 
-  user.hrStatus = "rejected";
+  user.hrStatus = HR_STATUS.REJECTED;
   user.hrRejectionReason = reason || "";
   await user.save();
 

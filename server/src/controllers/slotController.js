@@ -3,11 +3,13 @@ const AppError = require("../utils/AppError");
 const catchAsync = require("../utils/catchAsync");
 const logger = require("../utils/logger");
 
+const ROLES = require("../constants/roles");
+
 const Slot = require("../models/Slot");
 
 const getMySlots = catchAsync(async (req, res, next) => {
   const filter =
-    req.user.role === "hr"
+    req.user.role === ROLES.HR
       ? { contactEmail: req.user.email }
       : { booking: req.user._id };
 

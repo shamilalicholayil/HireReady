@@ -3,6 +3,8 @@ const User = require("../models/User");
 const Session = require("../models/Session");
 const Slot = require("../models/Slot");
 
+const ROLES = require("../constants/roles");
+
 const getDashboardStats = catchAsync(async (req, res) => {
   const [
     totalUsers,
@@ -14,9 +16,15 @@ const getDashboardStats = catchAsync(async (req, res) => {
     bookedSlots,
     completedInterviews,
   ] = await Promise.all([
-    User.countDocuments({ role: "user" }),
-    User.countDocuments({ role: "hr", hrStatus: "approved" }),
-    User.countDocuments({ role: "hr", hrStatus: "pending" }),
+    User.countDocuments({ role: ROLES.USER }),
+    User.countDocuments({
+      role: ROLES.HR,
+      hrStatus: HR_STATUS.APPROVED,
+    }),
+    User.countDocuments({
+      role: ROLES.HR,
+      hrStatus: HR_STATUS.PENDING,
+    }),
     Session.countDocuments({}),
     Session.countDocuments({ status: "completed" }),
     Slot.countDocuments({}),

@@ -11,7 +11,8 @@ const {
 } = require("../utils/cloudinaryUpload");
 
 const User = require("../models/User");
-const httpStatus = require("../constants/httpStatus");
+const ROLES = require("../constants/roles");
+const HR_STATUS = require("../constants/hrStatus");
 
 const getProfile = catchAsync(async (req, res, next) => {
   const user = req.user._id;
@@ -120,7 +121,7 @@ const uploadResume = catchAsync(async (req, res, next) => {
           : "fullstack";
 
   const result = await streamUploadResume(req.file.buffer);
-  console.log("suggestedTrack:", suggestedTrack);
+
   const updated = await User.findByIdAndUpdate(
     req.user._id,
     {
@@ -167,7 +168,7 @@ const uploadHRDocument = catchAsync(async (req, res, next) => {
 
 const reapplyHR = catchAsync(async (req, res, next) => {
   const user = req.user;
-  if (user.hrStatus !== "rejected") {
+  if (user.hrStatus !== HR_STATUS.REJECTED) {
     return next(
       new AppError(
         "Only rejected applicants can re-apply.",
@@ -183,7 +184,7 @@ const reapplyHR = catchAsync(async (req, res, next) => {
     });
   }
 
-  user.hrStatus = "pending";
+  user.hrStatus = HR_STATUS.PENDING;
   user.hrRejectionReason = "";
   user.hrDocuments = [];
   await user.save();
@@ -207,7 +208,7 @@ const downloadResume = catchAsync(async (req, res, next) => {
 
   const isOwner = targetUser._id.toString() === requester._id.toString();
   const isAuthorized =
-    isOwner || requester.role === "hr" || requester.role === "admin";
+    isOwner || requester.role === ROLES.HR || requester.role === ROLES.ADMIN;
   if (!isAuthorized)
     return next(new AppError("Not authorized", httpStatus.FORBIDDEN));
 

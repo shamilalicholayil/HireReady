@@ -15,7 +15,6 @@ client
   .then(() => logger.info("Redis connected successfully"))
   .catch((error) => {
     logger.error("Redis connection failed", error);
-    console.log(error);
   });
 
 module.exports = client;

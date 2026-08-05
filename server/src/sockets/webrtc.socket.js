@@ -1,5 +1,8 @@
 const logger = require("../utils/logger");
+
 const Slot = require("../models/Slot");
+
+const ROLES = require("../constants/roles");
 
 // In-memory per-room state — single Node process (fork mode), same known
 // limitation as your Socket.io scaling note. Resets on restart. Fine for now,
@@ -24,7 +27,8 @@ const registerWebRTCHandlers = (io, socket) => {
       }
 
       const isHR =
-        socket.user.role === "hr" && slot.contactEmail === socket.user.email;
+        socket.user.role === ROLES.HR &&
+        slot.contactEmail === socket.user.email;
       const isBookedUser =
         slot.booking?.toString() === socket.user._id.toString();
       if (!isHR && !isBookedUser) {

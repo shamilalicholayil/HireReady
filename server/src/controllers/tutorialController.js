@@ -2,7 +2,9 @@ const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/AppError");
 
 const Tutorial = require("../models/Tutorial");
+
 const httpStatus = require("../constants/httpStatus");
+const ROLES = require("../constants/roles");
 
 const createTutorial = catchAsync(async (req, res, next) => {
   const { title, youtubeId, track, description, difficulty, topics } = req.body;
@@ -47,7 +49,7 @@ const getTutorialById = catchAsync(async (req, res, next) => {
   if (!tutorial)
     return next(new AppError("Tutorial not found.", httpStatus.NOT_FOUND));
 
-  if (!tutorial.isActive && req.user?.role !== "admin") {
+  if (!tutorial.isActive && req.user?.role !== ROLES.ADMIN) {
     return next(new AppError("Tutorial not found.", httpStatus.NOT_FOUND));
   }
 

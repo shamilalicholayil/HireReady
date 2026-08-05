@@ -3,7 +3,9 @@ const AppError = require("../utils/AppError");
 
 const FriendRequest = require("../models/FriendRequest");
 const User = require("../models/User");
+
 const httpStatus = require("../constants/httpStatus");
+const ROLES = require("../constants/roles");
 
 const sendFriendRequest = catchAsync(async (req, res, next) => {
   const myId = req.user._id;
@@ -126,7 +128,7 @@ const searchUsers = catchAsync(async (req, res, next) => {
 
   const users = await User.find({
     _id: { $ne: myId },
-    role: "user",
+    role: ROLES.USER,
     blockedUsers: { $ne: myId },
     name: { $regex: q.trim(), $options: "i" },
   }).select("name avatar email");

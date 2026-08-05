@@ -4,12 +4,14 @@ const AppError = require("../utils/AppError");
 const User = require("../models/User");
 
 const { getIO, getOnlineSocketIds } = require("../config/socket");
+
 const httpStatus = require("../constants/httpStatus");
+const ROLES = require("../constants/roles");
 
 const getAllUsers = catchAsync(async (req, res, next) => {
-  const { page = 1, limit = 10, search = "", role = "user" } = req.query;
+  const { page = 1, limit = 10, search = "", role = ROLES.USER } = req.query;
 
-  if (!["user", "hr", "admin"].includes(role)) {
+  if (![ROLES.USER, ROLES.HR, ROLES.ADMIN].includes(role)) {
     return next(new AppError("Invalid role filter.", httpStatus.BAD_REQUEST));
   }
 
@@ -47,7 +49,7 @@ const toggleBlockUser = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.params.id);
   if (!user) return next(new AppError("User not found.", httpStatus.NOT_FOUND));
 
-  if (user.role === "admin") {
+  if (user.role === ROLES.ADMIN) {
     return next(new AppError("Cannot block an admin.", httpStatus.FORBIDDEN));
   }
 
