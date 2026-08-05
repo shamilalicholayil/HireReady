@@ -10,6 +10,7 @@ import { downloadResume } from "../../api/profileApi";
 import { Button } from "@/components/ui/button";
 import Card from "../../components/common/Card";
 import CloseAndScheduleForm from "../../components/jobs/CloseAndScheduleForm";
+import ScheduleInterviewButton from "../../components/jobs/ScheduleInterviewButton";
 
 const formatSlotTime = (slot) => {
   if (!slot) return null;
@@ -191,6 +192,24 @@ const JobApplicants = () => {
                 Interview: {formatSlotTime(app.scheduledSlot)}
               </p>
             )}
+
+            {app.status === "shortlisted" &&
+              !app.scheduledSlot &&
+              job?.isClosed && (
+                <div className="mt-3">
+                  <ScheduleInterviewButton
+                    appId={app._id}
+                    track={job.track}
+                    onScheduled={(updatedApp) =>
+                      setApplications((prev) =>
+                        prev.map((a) =>
+                          a._id === updatedApp._id ? updatedApp : a,
+                        ),
+                      )
+                    }
+                  />
+                </div>
+              )}
           </Card>
         ))}
 

@@ -31,6 +31,7 @@ import HRDashboard from "../pages/hr/Dashboard";
 import ApplicationsList from "../pages/hr/ApplicationsList";
 import JobApplicants from "../pages/hr/JobApplicants";
 import JobPostings from "../pages/hr/JobPostings";
+import SlotManagement from "../pages/hr/SlotManagement";
 
 import UserManagement from "../pages/admin/UserManagement";
 import AdminDashboard from "../pages/admin/Dashboard";
@@ -131,6 +132,7 @@ export default function AppRoutes() {
           <Route path="/hr/job-postings" element={<JobPostings />} />
           <Route path="/hr/applications" element={<ApplicationsList />} />
           <Route path="/hr/applications/:jobId" element={<JobApplicants />} />
+          <Route path="/hr/slots" element={<SlotManagement />} /> {/* new */}
           <Route path="/hr/interviews" element={<InterviewsList />} />
           <Route path="/hr/profile" element={<Profile />} />
         </Route>

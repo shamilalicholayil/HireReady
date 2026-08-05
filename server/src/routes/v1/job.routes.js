@@ -6,7 +6,7 @@ const validate = require("../../middlewares/validate.middleware");
 const {
   createJobSchema,
   updateApplicationStatusSchema,
-  closeJobAndScheduleSchema,
+  scheduleApplicantInterviewSchema,
 } = require("../../validators/job.validator");
 const {
   createJob,
@@ -17,7 +17,8 @@ const {
   applyToJob,
   getApplicationsForJob,
   updateApplicationStatus,
-  closeJobAndSchedule,
+  closeJob,
+  scheduleApplicantInterview,
 } = require("../../controllers/jobController");
 const AppError = require("../../utils/AppError");
 
@@ -35,12 +36,13 @@ router.patch(
   validate(updateApplicationStatusSchema),
   updateApplicationStatus,
 );
+router.patch("/:id/close", protect, isHR, closeJob);
 router.post(
-  "/:id/close-and-schedule",
+  "/applications/:appId/schedule",
   protect,
   isHR,
-  validate(closeJobAndScheduleSchema),
-  closeJobAndSchedule,
+  validate(scheduleApplicantInterviewSchema),
+  scheduleApplicantInterview,
 );
 
 module.exports = router;

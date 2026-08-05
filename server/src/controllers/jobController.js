@@ -52,7 +52,10 @@ const getJobById = catchAsync(async (req, res, next) => {
   const job = await Job.findById(req.params.id);
   if (!job) return next(new AppError("Job not found", httpStatus.NOT_FOUND));
 
-  if (!job.isActive || job.isClosed) {
+  const isOwner =
+    req.user && job.postedBy.toString() === req.user._id.toString();
+
+  if (!isOwner && (!job.isActive || job.isClosed)) {
     return next(
       new AppError(
         "This job posting is no longer active",
@@ -218,9 +221,7 @@ const updateApplicationStatus = catchAsync(async (req, res, next) => {
   res.status(httpStatus.OK).json({ status: "success", data: { application } });
 });
 
-const closeJobAndSchedule = catchAsync(async (req, res, next) => {
-  const { interviewWindowStart, avgDurationMinutes } = req.body;
-
+const closeJob = catchAsync(async (req, res, next) => {
   const job = await Job.findById(req.params.id);
   if (!job) return next(new AppError("Job not found", httpStatus.NOT_FOUND));
   if (job.postedBy.toString() !== req.user._id.toString()) {
@@ -238,68 +239,10 @@ const closeJobAndSchedule = catchAsync(async (req, res, next) => {
   job.isClosed = true;
   await job.save();
 
-  const duration = avgDurationMinutes || 30;
-  const windowStart = new Date(interviewWindowStart);
-
-  const shortlisted = await JobApplication.find({
-    job: job._id,
-    status: "shortlisted",
-  })
-    .populate("applicant", "name email")
-    .sort({ createdAt: 1 });
-
   const rejected = await JobApplication.find({
     job: job._id,
     status: "rejected",
   }).populate("applicant", "name email");
-
-  const formatDate = (d) => new Date(d).toLocaleDateString("en-GB");
-  const formatTime = (d) =>
-    new Date(d).toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
-
-  for (let i = 0; i < shortlisted.length; i++) {
-    const application = shortlisted[i];
-    const slotStart = new Date(windowStart.getTime() + i * duration * 60000);
-    const slotEnd = new Date(slotStart.getTime() + duration * 60000);
-
-    const slot = await Slot.create({
-      name: application.applicant.name,
-      contactEmail: req.user.email,
-      track: job.track,
-      job: job._id,
-      date: slotStart,
-      startTime: slotStart,
-      endTime: slotEnd,
-      slotStatus: "booked",
-      booking: application.applicant._id,
-    });
-
-    application.scheduledSlot = slot._id;
-    application.interviewSlotIndex = i;
-    await application.save();
-
-    const interviewLink = `${process.env.CLIENT_URL}/interview/${slot._id}`;
-    try {
-      await transporter.sendMail({
-        from: process.env.MAIL_USER,
-        to: application.applicant.email,
-        subject: `Interview Scheduled — ${job.title}`,
-        html: `
-          <p>Congratulations! You've been shortlisted for <strong>${job.title}</strong> at ${job.company}.</p>
-          <p>Your interview is scheduled for <strong>${formatDate(slotStart)} from ${formatTime(slotStart)} to ${formatTime(slotEnd)}</strong>.</p>
-          <p><a href="${interviewLink}">Join Interview</a></p>
-        `,
-      });
-    } catch (mailErr) {
-      logger.error(
-        `Failed to send interview email to ${application.applicant.email}: ${mailErr.message}`,
-      );
-    }
-  }
 
   for (const application of rejected) {
     try {
@@ -321,12 +264,103 @@ const closeJobAndSchedule = catchAsync(async (req, res, next) => {
 
   res.status(httpStatus.OK).json({
     status: "success",
-    data: {
-      job,
-      scheduledCount: shortlisted.length,
-      rejectedNotified: rejected.length,
-    },
+    data: { job, rejectedNotified: rejected.length },
   });
+});
+
+const scheduleApplicantInterview = catchAsync(async (req, res, next) => {
+  const { appId } = req.params;
+  const { slotId } = req.body;
+
+  const application = await JobApplication.findById(appId)
+    .populate("job")
+    .populate("applicant", "name email");
+
+  if (!application)
+    return next(new AppError("Application not found", httpStatus.NOT_FOUND));
+  if (application.job.postedBy.toString() !== req.user._id.toString()) {
+    return next(
+      new AppError(
+        "Not authorized to schedule this application",
+        httpStatus.FORBIDDEN,
+      ),
+    );
+  }
+  if (application.job.isActive) {
+    return next(
+      new AppError(
+        "Close the job before scheduling interviews",
+        httpStatus.BAD_REQUEST,
+      ),
+    );
+  }
+  if (application.status !== "shortlisted") {
+    return next(
+      new AppError(
+        "Only shortlisted applicants can be scheduled",
+        httpStatus.BAD_REQUEST,
+      ),
+    );
+  }
+  if (application.scheduledSlot) {
+    return next(
+      new AppError(
+        "This applicant already has a scheduled interview",
+        httpStatus.BAD_REQUEST,
+      ),
+    );
+  }
+
+  const slot = await Slot.findOneAndUpdate(
+    { _id: slotId, slotStatus: "open" },
+    {
+      slotStatus: "booked",
+      booking: application.applicant._id,
+      job: application.job._id,
+      name: application.applicant.name,
+      contactEmail: req.user.email,
+    },
+    { new: true },
+  );
+
+  if (!slot) {
+    return next(
+      new AppError("Selected slot is no longer available", httpStatus.CONFLICT),
+    );
+  }
+
+  application.scheduledSlot = slot._id;
+  await application.save();
+
+  const formatDate = (d) => new Date(d).toLocaleDateString("en-GB");
+  const formatTime = (d) =>
+    new Date(d).toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+
+  const interviewLink = `${process.env.CLIENT_URL}/interview/${slot._id}`;
+  try {
+    await transporter.sendMail({
+      from: process.env.MAIL_USER,
+      to: application.applicant.email,
+      subject: `Interview Scheduled — ${application.job.title}`,
+      html: `
+        <p>Congratulations! You've been shortlisted for <strong>${application.job.title}</strong> at ${application.job.company}.</p>
+        <p>Your interview is scheduled for <strong>${formatDate(slot.startTime)} from ${formatTime(slot.startTime)} to ${formatTime(slot.endTime)}</strong>.</p>
+        <p><a href="${interviewLink}">Join Interview</a></p>
+      `,
+    });
+  } catch (mailErr) {
+    logger.error(
+      `Failed to send interview email to ${application.applicant.email}: ${mailErr.message}`,
+    );
+  }
+
+  res
+    .status(httpStatus.OK)
+    .json({ status: "success", data: { application, slot } });
 });
 
 module.exports = {
@@ -338,5 +372,6 @@ module.exports = {
   applyToJob,
   getApplicationsForJob,
   updateApplicationStatus,
-  closeJobAndSchedule,
+  closeJob,
+  scheduleApplicantInterview,
 };

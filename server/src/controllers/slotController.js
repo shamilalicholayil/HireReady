@@ -8,11 +8,39 @@ const httpStatus = require("../constants/httpStatus");
 
 const Slot = require("../models/Slot");
 
+const createSlot = catchAsync(async (req, res, next) => {
+  const { name, track, job, date, startTime, endTime } = req.body;
+
+  if (new Date(startTime) >= new Date(endTime)) {
+    return next(
+      new AppError("startTime must be before endTime", httpStatus.BAD_REQUEST),
+    );
+  }
+
+  const slot = await Slot.create({
+    name,
+    contactEmail: req.user.email,
+    track,
+    job,
+    date,
+    startTime,
+    endTime,
+    slotStatus: "open",
+  });
+
+  res.status(httpStatus.CREATED).json({ status: "success", data: { slot } });
+});
+
 const getMySlots = catchAsync(async (req, res, next) => {
+  const { track, status } = req.query;
+
   const filter =
     req.user.role === ROLES.HR
       ? { contactEmail: req.user.email }
       : { booking: req.user._id };
+
+  if (track) filter.track = track;
+  if (status) filter.slotStatus = status;
 
   const slots = await Slot.find(filter)
     .sort({ startTime: 1 })
@@ -50,4 +78,4 @@ const updateInterviewStatus = catchAsync(async (req, res, next) => {
   res.status(httpStatus.OK).json({ status: "success", data: { slot } });
 });
 
-module.exports = { getMySlots, getSlotById, updateInterviewStatus };
+module.exports = { createSlot, getMySlots, getSlotById, updateInterviewStatus };

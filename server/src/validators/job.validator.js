@@ -18,15 +18,12 @@ const updateApplicationStatusSchema = Joi.object({
   status: Joi.string().valid("shortlisted", "rejected").required(),
 });
 
-const closeJobAndScheduleSchema = Joi.object({
-  interviewWindowStart: Joi.date().greater("now").required().messages({
-    "date.greater": "Interview window must start in the future",
-  }),
-  avgDurationMinutes: Joi.number().min(5).default(30),
+const scheduleApplicantInterviewSchema = Joi.object({
+  slotId: Joi.string().hex().length(24).required(),
 });
 
 module.exports = {
   createJobSchema,
   updateApplicationStatusSchema,
-  closeJobAndScheduleSchema,
+  scheduleApplicantInterviewSchema,
 };

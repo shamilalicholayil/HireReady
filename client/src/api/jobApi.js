@@ -21,5 +21,7 @@ export const fetchJobApplications = (jobId, params = {}) =>
 export const updateApplicationStatus = (appId, status) =>
   axiosInstance.patch(`/jobs/applications/${appId}/status`, { status });
 
-export const closeJobAndSchedule = (jobId, payload) =>
-  axiosInstance.post(`/jobs/${jobId}/close-and-schedule`, payload);
+export const closeJob = (jobId) => axiosInstance.patch(`/jobs/${jobId}/close`);
+
+export const scheduleApplicantInterview = (appId, slotId) =>
+  axiosInstance.post(`/jobs/applications/${appId}/schedule`, { slotId });
