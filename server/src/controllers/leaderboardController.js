@@ -3,6 +3,8 @@ const LeaderboardScore = require("../models/LeaderboardScore");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/AppError");
 
+const httpStatus = require("../constants/httpStatus");
+
 const getLeaderboard = catchAsync(async (req, res, next) => {
   const { track, difficulty, page = 1, limit = 20 } = req.query;
 

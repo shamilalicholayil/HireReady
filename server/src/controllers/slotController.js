@@ -4,6 +4,7 @@ const catchAsync = require("../utils/catchAsync");
 const logger = require("../utils/logger");
 
 const ROLES = require("../constants/roles");
+const httpStatus = require("../constants/httpStatus");
 
 const Slot = require("../models/Slot");
 

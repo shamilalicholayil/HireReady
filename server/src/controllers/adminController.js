@@ -3,7 +3,9 @@ const User = require("../models/User");
 const Session = require("../models/Session");
 const Slot = require("../models/Slot");
 
+const httpStatus = require("../constants/httpStatus");
 const ROLES = require("../constants/roles");
+const HR_STATUS = require("../constants/hrStatus");
 
 const getDashboardStats = catchAsync(async (req, res) => {
   const [
