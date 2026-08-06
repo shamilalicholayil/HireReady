@@ -37,7 +37,7 @@ const getDashboardStats = catchAsync(async (req, res) => {
       { $group: { _id: null, avgScore: { $avg: "$finalScore" } } },
     ]),
   ]);
-
+  console.log(totalSlots);
   res.status(httpStatus.OK).json({
     status: "success",
     data: {
