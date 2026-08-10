@@ -15,7 +15,7 @@ const InterviewSlotCard = ({
   const canJoin = () => {
     const owns = isHR
       ? slot.contactEmail === user.email
-      : slot.booking === user._id;
+      : slot.booking?._id === user._id;
     const notEnded =
       slot.interviewStatus !== "completed" &&
       slot.interviewStatus !== "no_show";
