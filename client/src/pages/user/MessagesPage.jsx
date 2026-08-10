@@ -107,7 +107,7 @@ export default function MessagesPage() {
         getFriends(),
       ]);
       dispatch(setConversations(convRes.data.conversations));
-      dispatch(setFriends(friendsRes.data.friends));
+      dispatch(setFriends(friendsRes.data));
     } catch {
       toast.error("Couldn't load conversations.");
     } finally {
