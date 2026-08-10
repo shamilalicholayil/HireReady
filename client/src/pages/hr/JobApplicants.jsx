@@ -159,33 +159,35 @@ const JobApplicants = () => {
               <span className="w-fit rounded-full bg-[var(--surface)] px-3 py-1 text-xs uppercase text-[var(--text-secondary)]">
                 {app.status}
               </span>
-              {app.status === "applied" && (
-                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
-                  {app.applicant.resumeUrl && (
-                    <Button
-                      variant="outline"
-                      className="w-full sm:w-auto"
-                      onClick={() => handleDownloadResume(app.applicant._id)}
-                    >
-                      Download CV
-                    </Button>
-                  )}
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
+                {app.applicant.resumeUrl && (
                   <Button
                     variant="outline"
                     className="w-full sm:w-auto"
-                    onClick={() => handleStatusChange(app._id, "shortlisted")}
+                    onClick={() => handleDownloadResume(app.applicant._id)}
                   >
-                    Shortlist
+                    Download CV
                   </Button>
-                  <Button
-                    variant="destructive"
-                    className="w-full sm:w-auto"
-                    onClick={() => handleStatusChange(app._id, "rejected")}
-                  >
-                    Reject
-                  </Button>
-                </div>
-              )}
+                )}
+                {app.status === "applied" && (
+                  <>
+                    <Button
+                      variant="outline"
+                      className="w-full sm:w-auto"
+                      onClick={() => handleStatusChange(app._id, "shortlisted")}
+                    >
+                      Shortlist
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      className="w-full sm:w-auto"
+                      onClick={() => handleStatusChange(app._id, "rejected")}
+                    >
+                      Reject
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
             {app.status === "shortlisted" && app.scheduledSlot && (
               <p className="mt-3 break-words text-sm text-[var(--text-secondary)]">
@@ -193,23 +195,20 @@ const JobApplicants = () => {
               </p>
             )}
 
-            {app.status === "shortlisted" &&
-              !app.scheduledSlot &&
-              job?.isClosed && (
-                <div className="mt-3">
-                  <ScheduleInterviewButton
-                    appId={app._id}
-                    track={job.track}
-                    onScheduled={(updatedApp) =>
-                      setApplications((prev) =>
-                        prev.map((a) =>
-                          a._id === updatedApp._id ? updatedApp : a,
-                        ),
-                      )
-                    }
-                  />
-                </div>
-              )}
+            {app.status === "shortlisted" && !app.scheduledSlot && (
+              <div className="mt-3">
+                <ScheduleInterviewButton
+                  appId={app._id}
+                  onScheduled={(updatedApp) =>
+                    setApplications((prev) =>
+                      prev.map((a) =>
+                        a._id === updatedApp._id ? updatedApp : a,
+                      ),
+                    )
+                  }
+                />
+              </div>
+            )}
           </Card>
         ))}
 
