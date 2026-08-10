@@ -7,6 +7,7 @@ import themeReducer from "../features/theme/themeSlice";
 import slotReducer from "../features/slot/slotSlice";
 import interviewReducer from "../features/interview/interviewSlice";
 import leaderboardReducer from "../features/leaderboard/leaderboardSlice";
+import notificationReducer from "../features/notification/notificationSlice";
 
 const appReducer = combineReducers({
   auth: authReducer,
@@ -17,6 +18,7 @@ const appReducer = combineReducers({
   slot: slotReducer,
   interview: interviewReducer,
   leaderboard: leaderboardReducer,
+  notification: notificationReducer,
 });
 
 const rootReducer = (state, action) => {

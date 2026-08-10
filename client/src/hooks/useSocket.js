@@ -15,6 +15,7 @@ import {
   clearTypingUser,
 } from "../features/messages/messagesSlice";
 import { updateFriendLastSeen } from "../features/friend/friendSlice";
+import { notificationReceived } from "../features/notification/notificationSlice";
 import { markAsRead } from "../api/messageApi";
 
 const SOCKET_URL = new URL(import.meta.env.VITE_API_URL).origin;
@@ -52,6 +53,11 @@ function connectSocket(token) {
         message.sender === myId ? message.receiver : message.sender;
       markAsRead(otherUserId).catch(() => {});
     }
+  });
+
+  socket.on("notification:new", (notification) => {
+    store.dispatch(notificationReceived(notification));
+    toast(notification.message);
   });
 
   socket.on("conversationRead", ({ conversationId, unreadCount }) => {

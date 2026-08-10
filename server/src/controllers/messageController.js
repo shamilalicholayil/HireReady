@@ -5,6 +5,8 @@ const findOrCreateConversation = require("../utils/findOrCreateConversation");
 const { streamUploadAttachment } = require("../utils/cloudinaryUpload");
 const isBlocked = require("../utils/isBlocked");
 
+const { sendNotification } = require("../grpc/notificationClient");
+
 const Message = require("../models/Message");
 const Conversation = require("../models/Conversation");
 const User = require("../models/User");
@@ -141,6 +143,22 @@ const sendMessage = catchAsync(async (req, res, next) => {
     const io = getIO();
     receiverSocketIds.forEach((socketId) => {
       io.to(socketId).emit("newMessage", message);
+    });
+  }
+
+  const notification = await sendNotification({
+    userId: receiverId,
+    type: "new_message",
+    message: hasContent
+      ? `New message: "${content.trim().slice(0, 60)}"`
+      : "Sent you an attachment",
+    relatedId: message._id,
+  });
+
+  if (notification && receiverSocketIds.size > 0) {
+    const io = getIO();
+    receiverSocketIds.forEach((socketId) => {
+      io.to(socketId).emit("notification:new", notification);
     });
   }
 

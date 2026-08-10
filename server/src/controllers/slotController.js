@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
 
+const { getIO, getOnlineSocketIds } = require("../config/socket");
+
 const { canTransition } = require("../utils/interviewStatusFlow");
 const AppError = require("../utils/AppError");
 const catchAsync = require("../utils/catchAsync");
@@ -7,6 +9,8 @@ const logger = require("../utils/logger");
 const transporter = require("../utils/mailer");
 const { createSlotForCandidate } = require("../utils/slotScheduling");
 const escapeRegex = require("../utils/regex");
+
+const { sendNotification } = require("../grpc/notificationClient");
 
 const ROLES = require("../constants/roles");
 const httpStatus = require("../constants/httpStatus");
@@ -296,6 +300,20 @@ const scheduleNextRound = catchAsync(async (req, res, next) => {
     endTime,
     contactEmail: req.user.email,
   });
+
+  const notification = await sendNotification({
+    userId: currentSlot.booking._id,
+    type: "booking_confirmed",
+    message: `Your ${nextRound} round for ${currentSlot.job.title} at ${currentSlot.job.company} has been scheduled.`,
+    relatedId: nextSlot._id,
+  });
+
+  if (notification) {
+    const io = getIO();
+    getOnlineSocketIds(currentSlot.booking._id).forEach((socketId) => {
+      io.to(socketId).emit("notification:new", notification);
+    });
+  }
 
   res.status(httpStatus.OK).json({ status: "success", data: { nextSlot } });
 });

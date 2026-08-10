@@ -1,6 +1,8 @@
 const { Router } = require("express");
 const router = Router();
 
+const notification = require("./notification.routes");
+
 const authRoutes = require("./auth.routes");
 const profileRoutes = require("./profile.routes");
 const answerRoutes = require("./answer.routes");
@@ -19,6 +21,8 @@ const userRoutes = require("./user.routes.js");
 const questionRoutes = require("./question.routes");
 const tutorialRoutes = require("./tutorial.routes.js");
 const hrVerificationRoutes = require("./hrVerification.routes.js");
+
+router.use("/notifications", notification);
 
 router.use("/auth", authRoutes);
 router.use("/profile", profileRoutes);
