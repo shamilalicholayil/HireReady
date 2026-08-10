@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
+import Pagination from "../../components/common/Pagination";
 import {
   createQuestion,
   getAllQuestions,
@@ -28,14 +29,17 @@ export default function QuestionManagement() {
   const [filterTrack, setFilterTrack] = useState("");
   const [filterDifficulty, setFilterDifficulty] = useState("");
   const [confirmTarget, setConfirmTarget] = useState(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   const fetchQuestions = async () => {
     try {
-      const params = {};
+      const params = { page, limit: 10 };
       if (filterTrack) params.track = filterTrack;
       if (filterDifficulty) params.difficulty = filterDifficulty;
       const res = await getAllQuestions(params);
       setQuestions(res.data.questions);
+      setTotalPages(res.data.pagination.totalPages);
     } catch (err) {
       toast.error("Failed to fetch questions.");
     }
@@ -43,6 +47,10 @@ export default function QuestionManagement() {
 
   useEffect(() => {
     fetchQuestions();
+  }, [filterTrack, filterDifficulty, page]);
+
+  useEffect(() => {
+    setPage(1);
   }, [filterTrack, filterDifficulty]);
 
   const handleChange = (e) => {
@@ -346,6 +354,7 @@ export default function QuestionManagement() {
           </div>
         ))}
       </div>
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       <ConfirmDialog
         open={!!confirmTarget}
         onOpenChange={(open) => !open && setConfirmTarget(null)}

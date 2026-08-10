@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
+import Pagination from "../../components/common/Pagination";
 import {
   createTutorial,
   getAllTutorials,
@@ -29,14 +30,17 @@ export default function TutorialManagement() {
   const [filterTrack, setFilterTrack] = useState("");
   const [filterDifficulty, setFilterDifficulty] = useState("");
   const [confirmTarget, setConfirmTarget] = useState(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   const fetchTutorials = async () => {
     try {
-      const params = {};
+      const params = { page, limit: 10 };
       if (filterTrack) params.track = filterTrack;
       if (filterDifficulty) params.difficulty = filterDifficulty;
       const res = await getAllTutorials(params);
       setTutorials(res.data.tutorials);
+      setTotalPages(res.data.pagination.totalPages);
     } catch (err) {
       toast.error("Failed to fetch tutorials.");
     }
@@ -44,6 +48,10 @@ export default function TutorialManagement() {
 
   useEffect(() => {
     fetchTutorials();
+  }, [filterTrack, filterDifficulty, page]);
+
+  useEffect(() => {
+    setPage(1);
   }, [filterTrack, filterDifficulty]);
 
   const handleChange = (e) => {
@@ -372,7 +380,7 @@ export default function TutorialManagement() {
           </div>
         ))}
       </div>
-
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       <ConfirmDialog
         open={!!confirmTarget}
         onOpenChange={(open) => !open && setConfirmTarget(null)}
