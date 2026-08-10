@@ -50,6 +50,7 @@ const registerWebRTCHandlers = (io, socket) => {
           socket.emit("interview:join-request", {
             userId,
             name: waitingSocket.user.name,
+            email: waitingSocket.user.email,
           });
         }
         return;
@@ -63,6 +64,7 @@ const registerWebRTCHandlers = (io, socket) => {
         io.to(room.hostSocketId).emit("interview:join-request", {
           userId: socket.user._id.toString(),
           name: socket.user.name,
+          email: socket.user.email,
         });
       }
     } catch (err) {

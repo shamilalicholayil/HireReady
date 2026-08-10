@@ -29,7 +29,7 @@ function initSocket(server) {
     try {
       const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
       const user = await User.findById(decoded.id).select(
-        "_id role email isBlocked",
+        "_id name role email isBlocked",
       );
       if (!user) return next(new Error("User not found"));
       if (user.isBlocked) return next(new Error("Account blocked"));

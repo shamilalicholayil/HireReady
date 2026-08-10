@@ -246,7 +246,12 @@ const InterviewRoom = () => {
                 key={r.userId}
                 className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]"
               >
-                <span className="text-sm truncate">{r.name}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm truncate">{r.name}</p>
+                  <p className="text-xs text-[var(--text-secondary)] truncate">
+                    {r.email}
+                  </p>
+                </div>
                 <div className="flex gap-2 shrink-0">
                   <button
                     onClick={() => admit(r.userId)}
