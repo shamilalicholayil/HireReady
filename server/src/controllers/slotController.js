@@ -39,7 +39,7 @@ const getMySlots = catchAsync(async (req, res, next) => {
 
   if (track) filter.track = track;
   if (status) filter.slotStatus = status;
-  if (job) filter.job = job;
+  if (job) filter.job = new mongoose.Types.ObjectId(job);
   if (round) filter.round = round;
   if (search) filter.name = { $regex: escapeRegex(search), $options: "i" };
 
