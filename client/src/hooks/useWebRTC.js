@@ -112,7 +112,7 @@ export const useWebRTC = (roomId, slotId) => {
       setStatus("denied");
       toast.error("The host denied your request to join.");
     });
-    socket.on("interview:join-request", ({ userId, name }) => {
+    socket.on("interview:join-request", ({ userId, name, email }) => {
       setPendingRequests((prev) =>
         prev.some((r) => r.userId === userId)
           ? prev
