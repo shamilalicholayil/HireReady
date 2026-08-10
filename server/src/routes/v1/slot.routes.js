@@ -7,21 +7,20 @@ const {
   requireInterviewParty,
 } = require("../../middlewares/interviewAuth.middleware");
 const {
-  createSlot,
   getMySlots,
+  getMyInterviewJobGroups,
   getSlotById,
   updateInterviewStatus,
   setSlotOutcome,
   scheduleNextRound,
 } = require("../../controllers/slotController");
 const {
-  createSlotSchema,
   setSlotOutcomeSchema,
   scheduleNextRoundSchema,
   updateInterviewStatusSchema,
 } = require("../../validators/slot.validator");
 
-router.post("/", protect, isHR, validate(createSlotSchema), createSlot);
+router.get("/my-interviews/jobs", protect, getMyInterviewJobGroups);
 router.get("/my-interviews", protect, getMySlots);
 router.get("/:id", protect, requireInterviewParty, getSlotById);
 router.patch(

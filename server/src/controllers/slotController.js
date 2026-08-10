@@ -1,8 +1,12 @@
+const mongoose = require("mongoose");
+
 const { canTransition } = require("../utils/interviewStatusFlow");
 const AppError = require("../utils/AppError");
 const catchAsync = require("../utils/catchAsync");
 const logger = require("../utils/logger");
 const transporter = require("../utils/mailer");
+const { createSlotForCandidate } = require("../utils/slotScheduling");
+const escapeRegex = require("../utils/regex");
 
 const ROLES = require("../constants/roles");
 const httpStatus = require("../constants/httpStatus");
@@ -10,31 +14,23 @@ const httpStatus = require("../constants/httpStatus");
 const Slot = require("../models/Slot");
 const JobApplication = require("../models/JobApplication");
 
-const createSlot = catchAsync(async (req, res, next) => {
-  const { name, track, job, date, startTime, endTime } = req.body;
-
-  if (new Date(startTime) >= new Date(endTime)) {
-    return next(
-      new AppError("startTime must be before endTime", httpStatus.BAD_REQUEST),
-    );
-  }
-
-  const slot = await Slot.create({
-    name,
-    contactEmail: req.user.email,
-    track,
-    job,
-    date,
-    startTime,
-    endTime,
-    slotStatus: "open",
-  });
-
-  res.status(httpStatus.CREATED).json({ status: "success", data: { slot } });
-});
+const NEXT_ROUND = {
+  screening: "technical",
+  technical: "managerial",
+  managerial: "hr_final",
+};
 
 const getMySlots = catchAsync(async (req, res, next) => {
-  const { track, status } = req.query;
+  const {
+    track,
+    status,
+    job,
+    round,
+    search,
+    stage,
+    page = 1,
+    limit = 10,
+  } = req.query;
 
   const filter =
     req.user.role === ROLES.HR
@@ -43,12 +39,135 @@ const getMySlots = catchAsync(async (req, res, next) => {
 
   if (track) filter.track = track;
   if (status) filter.slotStatus = status;
+  if (job) filter.job = job;
+  if (round) filter.round = round;
+  if (search) filter.name = { $regex: escapeRegex(search), $options: "i" };
 
-  const slots = await Slot.find(filter)
-    .sort({ startTime: 1 })
-    .populate("job", "title company track");
+  const FINISHED = ["completed", "no_show"];
+  if (stage === "finished") filter.interviewStatus = { $in: FINISHED };
+  if (stage === "upcoming") filter.interviewStatus = { $nin: FINISHED };
 
-  res.status(httpStatus.OK).json({ status: "success", data: { slots } });
+  const skip = (Number(page) - 1) * Number(limit);
+
+  const [slots, total] = await Promise.all([
+    Slot.aggregate([
+      { $match: filter },
+      {
+        $addFields: {
+          isFinished: { $in: ["$interviewStatus", FINISHED] },
+          sortTime: {
+            $cond: [
+              { $in: ["$interviewStatus", FINISHED] },
+              { $multiply: [{ $toLong: "$startTime" }, -1] },
+              { $toLong: "$startTime" },
+            ],
+          },
+        },
+      },
+      { $sort: { isFinished: 1, sortTime: 1 } },
+      { $skip: skip },
+      { $limit: Number(limit) },
+    ]),
+    Slot.countDocuments(filter),
+  ]);
+
+  await Slot.populate(slots, [
+    { path: "job", select: "title company track" },
+    { path: "booking", select: "name email" },
+  ]);
+
+  const slotIds = slots.map((s) => s._id);
+  const nextRoundSlots = await Slot.find({
+    previousRound: { $in: slotIds },
+  }).select("previousRound");
+
+  const hasNextRoundSet = new Set(
+    nextRoundSlots.map((s) => s.previousRound.toString()),
+  );
+
+  const slotsWithFlag = slots.map((s) => ({
+    ...s,
+    hasNextRound: hasNextRoundSet.has(s._id.toString()),
+  }));
+
+  res.status(httpStatus.OK).json({
+    status: "success",
+    data: {
+      slots: slotsWithFlag,
+      pagination: {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / Number(limit)),
+      },
+    },
+  });
+});
+
+const getMyInterviewJobGroups = catchAsync(async (req, res, next) => {
+  const { search, track, page = 1, limit = 10 } = req.query;
+
+  const baseMatch =
+    req.user.role === ROLES.HR
+      ? { contactEmail: req.user.email }
+      : { booking: req.user._id };
+
+  const pipeline = [
+    { $match: baseMatch },
+    {
+      $group: {
+        _id: "$job",
+        count: { $sum: 1 },
+        nextTime: { $min: "$startTime" },
+      },
+    },
+    {
+      $lookup: {
+        from: "jobs",
+        localField: "_id",
+        foreignField: "_id",
+        as: "job",
+      },
+    },
+    { $unwind: "$job" },
+  ];
+
+  const postMatch = {};
+  if (search) {
+    const re = new RegExp(escapeRegex(search), "i");
+    postMatch.$or = [{ "job.title": re }, { "job.company": re }];
+  }
+  if (track) postMatch["job.track"] = track;
+  if (Object.keys(postMatch).length) pipeline.push({ $match: postMatch });
+
+  pipeline.push({ $sort: { "job.createdAt": -1 } });
+
+  const skip = (Number(page) - 1) * Number(limit);
+
+  const [result] = await Slot.aggregate([
+    ...pipeline,
+    {
+      $facet: {
+        data: [{ $skip: skip }, { $limit: Number(limit) }],
+        totalCount: [{ $count: "count" }],
+      },
+    },
+  ]);
+
+  const total = result.totalCount[0]?.count || 0;
+
+  res.status(httpStatus.OK).json({
+    status: "success",
+    data: {
+      jobGroups: result.data,
+      pagination: {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / Number(limit)),
+      },
+    },
+  });
 });
 
 const getSlotById = catchAsync(async (req, res, next) => {
@@ -105,17 +224,38 @@ const setSlotOutcome = catchAsync(async (req, res, next) => {
   await slot.save();
 
   if (outcome === "rejected") {
-    await JobApplication.findOneAndUpdate(
+    const application = await JobApplication.findOneAndUpdate(
       { job: slot.job, applicant: slot.booking },
       { status: "rejected" },
-    );
+      { new: true },
+    )
+      .populate("applicant", "name email")
+      .populate("job", "title company");
+
+    if (application) {
+      try {
+        await transporter.sendMail({
+          from: process.env.MAIL_USER,
+          to: application.applicant.email,
+          subject: `Application Update — ${application.job.title}`,
+          html: `
+            <p>Thank you for applying to <strong>${application.job.title}</strong> at ${application.job.company}.</p>
+            <p>After careful review, we've decided to move forward with other candidates for this role at this time.</p>
+          `,
+        });
+      } catch (mailErr) {
+        logger.error(
+          `Failed to send rejection email to ${application.applicant.email}: ${mailErr.message}`,
+        );
+      }
+    }
   }
 
   res.status(httpStatus.OK).json({ status: "success", data: { slot } });
 });
 
 const scheduleNextRound = catchAsync(async (req, res, next) => {
-  const { nextSlotId, round } = req.body;
+  const { startTime, endTime } = req.body;
   const currentSlot = req.slot;
 
   if (currentSlot.outcome !== "shortlisted") {
@@ -127,58 +267,42 @@ const scheduleNextRound = catchAsync(async (req, res, next) => {
     );
   }
 
-  const nextSlot = await Slot.findOneAndUpdate(
-    { _id: nextSlotId, slotStatus: "open" },
-    {
-      slotStatus: "booked",
-      booking: currentSlot.booking,
-      job: currentSlot.job,
-      round,
-      previousRound: currentSlot._id,
-    },
-    { new: true },
-  )
-    .populate("booking", "name email")
-    .populate("job", "title company");
-
-  if (!nextSlot) {
+  const nextRound = NEXT_ROUND[currentSlot.round];
+  if (!nextRound) {
     return next(
-      new AppError("Target slot is no longer available", httpStatus.CONFLICT),
+      new AppError(
+        "This is the final round; there is no next round",
+        httpStatus.BAD_REQUEST,
+      ),
     );
   }
 
-  const formatDate = (d) => new Date(d).toLocaleDateString("en-GB");
-  const formatTime = (d) =>
-    new Date(d).toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
-  const interviewLink = `${process.env.CLIENT_URL}/interview/${nextSlot._id}`;
+  await currentSlot.populate([
+    { path: "booking", select: "name email" },
+    { path: "job", select: "title company track" },
+  ]);
 
-  try {
-    await transporter.sendMail({
-      from: process.env.MAIL_USER,
-      to: nextSlot.booking.email,
-      subject: `Next Round Scheduled — ${round.replace("_", " ")} — ${nextSlot.job.title}`,
-      html: `
-        <p>You've advanced to the <strong>${round.replace("_", " ")}</strong> round for <strong>${nextSlot.job.title}</strong> at ${nextSlot.job.company}.</p>
-        <p>Your interview is scheduled for <strong>${formatDate(nextSlot.startTime)} from ${formatTime(nextSlot.startTime)} to ${formatTime(nextSlot.endTime)}</strong>.</p>
-        <p><a href="${interviewLink}">Join Interview</a></p>
-      `,
-    });
-  } catch (mailErr) {
-    logger.error(
-      `Failed to send next-round email to ${nextSlot.booking.email}: ${mailErr.message}`,
-    );
-  }
+  const nextSlot = await createSlotForCandidate({
+    applicantId: currentSlot.booking._id,
+    applicantName: currentSlot.booking.name,
+    applicantEmail: currentSlot.booking.email,
+    jobId: currentSlot.job._id,
+    jobTitle: currentSlot.job.title,
+    jobCompany: currentSlot.job.company,
+    jobTrack: currentSlot.job.track,
+    round: nextRound,
+    previousRoundSlotId: currentSlot._id,
+    startTime,
+    endTime,
+    contactEmail: req.user.email,
+  });
 
   res.status(httpStatus.OK).json({ status: "success", data: { nextSlot } });
 });
 
 module.exports = {
-  createSlot,
   getMySlots,
+  getMyInterviewJobGroups,
   getSlotById,
   updateInterviewStatus,
   setSlotOutcome,

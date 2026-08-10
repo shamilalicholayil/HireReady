@@ -19,7 +19,8 @@ const updateApplicationStatusSchema = Joi.object({
 });
 
 const scheduleApplicantInterviewSchema = Joi.object({
-  slotId: Joi.string().hex().length(24).required(),
+  startTime: Joi.date().required(),
+  endTime: Joi.date().greater(Joi.ref("startTime")).required(),
 });
 
 module.exports = {
