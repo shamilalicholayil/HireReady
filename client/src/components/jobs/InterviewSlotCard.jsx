@@ -30,10 +30,10 @@ const InterviewSlotCard = ({
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex flex-wrap items-center gap-2">
           <span className="w-fit rounded-full bg-[var(--surface)] px-3 py-1 text-xs uppercase tracking-wide text-[var(--text-secondary)]">
-            {slot.interviewStatus.replace("_", " ")}
+            {(slot.interviewStatus || "unknown").replace("_", " ")}
           </span>
           <span className="w-fit rounded-full bg-[var(--primary)]/10 px-3 py-1 text-xs uppercase tracking-wide text-[var(--primary)]">
-            {slot.round.replace("_", " ")}
+            {(slot.round || "unspecified").replace("_", " ")}
           </span>
           {slot.outcome === "rejected" && (
             <span className="w-fit rounded-full bg-red-500/15 px-3 py-1 text-xs uppercase tracking-wide text-red-400">
