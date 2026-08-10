@@ -25,6 +25,11 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   grpc-service:
     image: ghcr.io/shamilalicholayil/hireready-grpc-notification:latest
@@ -47,6 +52,11 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   frontend:
     image: ghcr.io/shamilalicholayil/hireready-frontend:latest
@@ -56,9 +66,8 @@ services:
       - "3000:80"
     depends_on:
       - backend
-
-  logging:
-    driver: "json-file"
-    options:
-      max-size: "10m"
-      max-file: "3"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
