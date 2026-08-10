@@ -16,10 +16,9 @@ export const useWebRTC = (roomId, slotId) => {
   const negotiatedOnceRef = useRef(false);
   const remoteCameraStreamIdRef = useRef(null);
 
-  // Perfect Negotiation state — resolves glare when both sides renegotiate at once
-  const politeRef = useRef(true); // guest defers by default; host flips this to false on admit
-  const makingOfferRef = useRef(false); // true while THIS side has an offer in flight
-  const ignoreOfferRef = useRef(false); // true if this side (impolite) is deliberately dropping a colliding offer
+  const politeRef = useRef(true);
+  const makingOfferRef = useRef(false);
+  const ignoreOfferRef = useRef(false);
 
   const [joined, setJoined] = useState(false);
   const [isHost, setIsHost] = useState(false);
@@ -105,7 +104,7 @@ export const useWebRTC = (roomId, slotId) => {
     socket.on("interview:waiting", () => setStatus("waiting"));
     socket.on("interview:admitted", ({ isHost: hostFlag }) => {
       setIsHost(hostFlag);
-      politeRef.current = !hostFlag; // host = impolite (stands ground), guest = polite (defers)
+      politeRef.current = !hostFlag;
       setStatus("admitted");
       setJoined(true);
     });
@@ -117,7 +116,7 @@ export const useWebRTC = (roomId, slotId) => {
       setPendingRequests((prev) =>
         prev.some((r) => r.userId === userId)
           ? prev
-          : [...prev, { userId, name }],
+          : [...prev, { userId, name, email }],
       );
     });
     socket.on("interview:peer-joined", async () => {
@@ -131,10 +130,9 @@ export const useWebRTC = (roomId, slotId) => {
         makingOfferRef.current || pc.signalingState !== "stable";
 
       ignoreOfferRef.current = !politeRef.current && offerCollision;
-      if (ignoreOfferRef.current) return; // impolite peer: drop the colliding offer, keep our own
+      if (ignoreOfferRef.current) return;
 
       if (offerCollision) {
-        // Polite peer: roll back our own pending local offer, then accept theirs
         await pc.setLocalDescription({ type: "rollback" });
       }
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
