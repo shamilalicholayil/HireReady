@@ -21,7 +21,7 @@ import MessagesPage from "../pages/user/MessagesPage";
 import JobBoard from "../pages/user/JobBoard";
 import JobDetail from "../pages/user/JobDetail";
 import InterviewsList from "../pages/user/InterviewsList";
-import Interview from "../pages/user/Interview";
+import AiInterview from "../pages/user/AiInterview";
 import Leaderboard from "../pages/user/Leaderboard";
 
 import RegisterHR from "../pages/hr/RegisterHR";
@@ -65,7 +65,7 @@ export default function AppRoutes() {
         <Route element={<AppLayout />}>
           <Route path="/dashboard" element={<UserDashboard />} />
           <Route path="/answers" element={<AnswerHistory />} />
-          <Route path="/interview" element={<Interview />} />
+          <Route path="/interview" element={<AiInterview />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/profile/resume" element={<ResumeUpload />} />
           <Route path="/job-board" element={<JobBoard />} />

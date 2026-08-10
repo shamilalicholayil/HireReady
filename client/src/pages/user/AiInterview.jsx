@@ -30,7 +30,7 @@ const TRACKS = ["frontend", "backend", "dsa", "fullstack"];
 
 const DIFFICULTIES = ["beginner", "intermediate", "advanced"];
 
-export default function Interview() {
+export default function AiInterview() {
   const dispatch = useDispatch();
 
   const {
@@ -48,6 +48,7 @@ export default function Interview() {
   const [userAnswer, setUserAnswer] = useState("");
   const [questionStartedAt, setQuestionStartedAt] = useState(null);
   const [answerType, setAnswerType] = useState("text");
+  const [questionKey, setQuestionKey] = useState(0);
 
   const handleStart = async () => {
     dispatch(setStatus("starting"));
@@ -58,6 +59,7 @@ export default function Interview() {
       });
       dispatch(startInterview(data));
       setQuestionStartedAt(Date.now());
+      setQuestionKey((k) => k + 1);
     } catch (err) {
       dispatch(
         setError(err?.response?.data?.message || "Failed to start session"),
@@ -85,6 +87,7 @@ export default function Interview() {
     dispatch(setCurrentQuestion(data.question));
 
     setQuestionStartedAt(Date.now());
+    setQuestionKey((k) => k + 1);
   };
 
   const handleSubmitAnswer = async () => {
@@ -119,6 +122,7 @@ export default function Interview() {
       if (data.nextStep === "follow_up") {
         dispatch(setFollowUpQuestion(data.followUp));
         setQuestionStartedAt(Date.now());
+        setQuestionKey((k) => k + 1);
       } else {
         await advanceToNextQuestion(session);
       }
@@ -159,51 +163,38 @@ export default function Interview() {
     currentQuestion?.question || currentQuestion?.questionText;
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6">
-      <InterviewHeader
-        track={track}
-        difficulty={difficulty}
-        questionNumber={session?.totalQuestions - remainingQuestionIds.length}
-        totalQuestions={session?.totalQuestions}
-      />
+    <div className="mx-auto max-w-4xl space-y-6 p-4 sm:p-6 pb-0">
+      <InterviewHeader track={track} difficulty={difficulty} />
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        <div className="order-first space-y-6 lg:order-last">
-          {isFollowUp && (
-            <div className="glass rounded-2xl p-4 border-yellow-400/30 text-yellow-300">
-              AI Follow-up Question
-            </div>
-          )}
-
-          <InterviewQuestion question={questionText} />
-
-          <AnswerEditor
-            value={userAnswer}
-            setValue={setUserAnswer}
-            disabled={status === "submitting"}
-            onSubmit={handleSubmitAnswer}
-            onVoiceUsed={() => setAnswerType("voice")}
-          />
-
-          {error && <p className="text-red-400 text-sm">{error}</p>}
-
-          <button
-            onClick={handleSubmitAnswer}
-            disabled={status === "submitting"}
-            className="w-full h-14 rounded-2xl gradient-primary font-semibold transition hover:scale-[1.02] disabled:opacity-50"
-          >
-            {status === "submitting" ? "AI Evaluating..." : "Submit Answer →"}
-          </button>
-        </div>
-
-        <div className="space-y-6">
-          <CameraPreview />
-
-          <div className="glass rounded-3xl p-5">
-            <h3 className="font-semibold">AI Status</h3>
-            <p className="mt-3 text-sm text-emerald-400">● Listening</p>
+      <div className="space-y-6">
+        {isFollowUp && (
+          <div className="glass rounded-2xl p-4 border-yellow-400/30 text-yellow-300">
+            AI Follow-up Question
           </div>
-        </div>
+        )}
+
+        <InterviewQuestion question={questionText} />
+
+        <AnswerEditor
+          key={questionKey}
+          value={userAnswer}
+          setValue={setUserAnswer}
+          disabled={status === "submitting"}
+          onSubmit={handleSubmitAnswer}
+          onVoiceUsed={() => setAnswerType("voice")}
+        />
+
+        {error && <p className="text-red-400 text-sm">{error}</p>}
+      </div>
+
+      <div className="sticky bottom-0 z-10 -mx-4 border-t border-white/10 bg-[var(--bg)]/95 px-4 py-4 backdrop-blur sm:-mx-6 sm:px-6">
+        <button
+          onClick={handleSubmitAnswer}
+          disabled={status === "submitting"}
+          className="mx-auto block w-full max-w-3xl h-14 rounded-2xl gradient-primary font-semibold transition hover:scale-[1.02] disabled:opacity-50"
+        >
+          {status === "submitting" ? "AI Evaluating..." : "Submit Answer →"}
+        </button>
       </div>
     </div>
   );

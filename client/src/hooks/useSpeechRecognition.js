@@ -26,6 +26,9 @@ export default function useSpeechRecognition() {
     recognitionRef.current = recognition;
 
     return () => {
+      recognition.onresult = null;
+      recognition.onerror = null;
+      recognition.onend = null;
       recognition.stop();
     };
   }, []);
@@ -91,5 +94,15 @@ export default function useSpeechRecognition() {
     setIsListening(false);
   }, []);
 
-  return { isListening, isSupported, startListening, stopListening };
+  const syncBaseText = useCallback((text) => {
+    baseTextRef.current = text;
+  }, []);
+
+  return {
+    isListening,
+    isSupported,
+    startListening,
+    stopListening,
+    syncBaseText,
+  };
 }

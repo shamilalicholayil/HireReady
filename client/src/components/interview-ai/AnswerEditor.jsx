@@ -11,8 +11,13 @@ export default function AnswerEditor({
   onVoiceUsed,
 }) {
   const textareaRef = useRef(null);
-  const { isListening, isSupported, startListening, stopListening } =
-    useSpeechRecognition();
+  const {
+    isListening,
+    isSupported,
+    startListening,
+    stopListening,
+    syncBaseText,
+  } = useSpeechRecognition();
 
   const handleMicToggle = () => {
     if (isListening) {
@@ -68,7 +73,10 @@ export default function AnswerEditor({
         ref={textareaRef}
         value={value}
         disabled={disabled}
-        onChange={(e) => setValue(e.target.value)}
+        onChange={(e) => {
+          setValue(e.target.value);
+          syncBaseText(e.target.value);
+        }}
         onKeyDown={handleKeyDown}
         placeholder="
         Explain your approach.
