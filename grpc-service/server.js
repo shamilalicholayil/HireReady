@@ -66,6 +66,14 @@ async function main() {
       console.log(`[grpc-notification] listening on ${boundPort}`);
     },
   );
+  process.on("SIGTERM", () => {
+    console.log(
+      "[grpc-notification] SIGTERM received, shutting down gracefully",
+    );
+    server.tryShutdown(() => {
+      mongoose.connection.close(false, () => process.exit(0));
+    });
+  });
 }
 
 main().catch((err) => {

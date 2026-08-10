@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const NOTIFICATION_TYPES = require("../constants/notificationTypes");
 
 const notificationSchema = new mongoose.Schema(
   {
@@ -10,7 +11,7 @@ const notificationSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["booking_confirmed", "new_message"],
+      enum: Object.values(NOTIFICATION_TYPES),
       required: true,
     },
     message: { type: String, required: true },

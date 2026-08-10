@@ -14,6 +14,7 @@ const { sendNotification } = require("../grpc/notificationClient");
 
 const ROLES = require("../constants/roles");
 const httpStatus = require("../constants/httpStatus");
+const NOTIFICATION_TYPES = require("../constants/notificationTypes");
 
 const Slot = require("../models/Slot");
 const JobApplication = require("../models/JobApplication");
@@ -301,19 +302,19 @@ const scheduleNextRound = catchAsync(async (req, res, next) => {
     contactEmail: req.user.email,
   });
 
-  const notification = await sendNotification({
+  const notification = sendNotification({
     userId: currentSlot.booking._id,
-    type: "booking_confirmed",
+    type: NOTIFICATION_TYPES.BOOKING_CONFIRMED,
     message: `Your ${nextRound} round for ${currentSlot.job.title} at ${currentSlot.job.company} has been scheduled.`,
     relatedId: nextSlot._id,
+  }).then((notification) => {
+    if (notification) {
+      const io = getIO();
+      getOnlineSocketIds(currentSlot.booking._id).forEach((socketId) => {
+        io.to(socketId).emit("notification:new", notification);
+      });
+    }
   });
-
-  if (notification) {
-    const io = getIO();
-    getOnlineSocketIds(currentSlot.booking._id).forEach((socketId) => {
-      io.to(socketId).emit("notification:new", notification);
-    });
-  }
 
   res.status(httpStatus.OK).json({ status: "success", data: { nextSlot } });
 });

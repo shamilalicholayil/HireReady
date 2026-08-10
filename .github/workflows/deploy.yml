@@ -8,6 +8,7 @@ env:
   REGISTRY: ghcr.io
   BACKEND_IMAGE: ${{ github.repository_owner }}/hireready-backend
   FRONTEND_IMAGE: ${{ github.repository_owner }}/hireready-frontend
+  GRPC_IMAGE: ${{ github.repository_owner }}/hireready-grpc-notification
 
 jobs:
   build-and-push:
@@ -45,6 +46,15 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:latest
             ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+
+      - name: Build grpc-service
+        uses: docker/build-push-action@v6
+        with:
+          context: ./grpc-service
+          push: ${{ github.ref == 'refs/heads/main' }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.GRPC_IMAGE }}:latest
+            ${{ env.REGISTRY }}/${{ env.GRPC_IMAGE }}:${{ github.sha }}
 
   deploy:
     needs: build-and-push
