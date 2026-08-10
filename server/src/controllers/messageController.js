@@ -12,6 +12,8 @@ const Conversation = require("../models/Conversation");
 const User = require("../models/User");
 
 const { getOnlineSocketIds, getIO } = require("../config/socket");
+
+const NOTIFICATION_TYPES = require("../constants/notificationTypes");
 const httpStatus = require("../constants/httpStatus");
 
 const getConversation = catchAsync(async (req, res, next) => {
@@ -146,21 +148,21 @@ const sendMessage = catchAsync(async (req, res, next) => {
     });
   }
 
-  const notification = await sendNotification({
+  const notification = sendNotification({
     userId: receiverId,
-    type: "new_message",
+    type: NOTIFICATION_TYPES.NEW_MESSAGE,
     message: hasContent
       ? `New message: "${content.trim().slice(0, 60)}"`
       : "Sent you an attachment",
     relatedId: message._id,
+  }).then((notification) => {
+    if (notification && receiverSocketIds.size > 0) {
+      const io = getIO();
+      receiverSocketIds.forEach((socketId) => {
+        io.to(socketId).emit("notification:new", notification);
+      });
+    }
   });
-
-  if (notification && receiverSocketIds.size > 0) {
-    const io = getIO();
-    receiverSocketIds.forEach((socketId) => {
-      io.to(socketId).emit("notification:new", notification);
-    });
-  }
 
   res.status(httpStatus.CREATED).json({ success: true, message });
 });
