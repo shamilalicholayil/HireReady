@@ -20,6 +20,7 @@ import FriendsPage from "../pages/user/FriendsPage";
 import MessagesPage from "../pages/user/MessagesPage";
 import JobBoard from "../pages/user/JobBoard";
 import JobDetail from "../pages/user/JobDetail";
+import InterviewsList from "../pages/user/InterviewsList";
 import Interview from "../pages/user/Interview";
 import Leaderboard from "../pages/user/Leaderboard";
 
@@ -31,7 +32,8 @@ import HRDashboard from "../pages/hr/Dashboard";
 import ApplicationsList from "../pages/hr/ApplicationsList";
 import JobApplicants from "../pages/hr/JobApplicants";
 import JobPostings from "../pages/hr/JobPostings";
-import SlotManagement from "../pages/hr/SlotManagement";
+import HRInterviewsList from "../pages/hr/HRInterviewsList";
+import HRJobInterviews from "../pages/hr/HRJobInterviews";
 
 import UserManagement from "../pages/admin/UserManagement";
 import AdminDashboard from "../pages/admin/Dashboard";
@@ -41,7 +43,6 @@ import HRVerificationQueue from "@/pages/admin/HRVerificationQueue";
 import LeaderboardManagement from "@/pages/admin/LeaderboardManagement";
 import JobOversight from "@/pages/admin/JobOversight";
 
-import InterviewsList from "../pages/shared/InterviewsList";
 import InterviewRoom from "@/pages/shared/InterviewRoom";
 
 export default function AppRoutes() {
@@ -132,8 +133,8 @@ export default function AppRoutes() {
           <Route path="/hr/job-postings" element={<JobPostings />} />
           <Route path="/hr/applications" element={<ApplicationsList />} />
           <Route path="/hr/applications/:jobId" element={<JobApplicants />} />
-          <Route path="/hr/slots" element={<SlotManagement />} /> {/* new */}
-          <Route path="/hr/interviews" element={<InterviewsList />} />
+          <Route path="/hr/interviews" element={<HRInterviewsList />} />
+          <Route path="/hr/interviews/:jobId" element={<HRJobInterviews />} />
           <Route path="/hr/profile" element={<Profile />} />
         </Route>
       </Route>

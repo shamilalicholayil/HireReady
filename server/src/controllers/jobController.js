@@ -7,6 +7,8 @@ const catchAsync = require("../utils/catchAsync");
 const transporter = require("../utils/mailer");
 const logger = require("../utils/logger");
 const escapeRegex = require("../utils/regex");
+const { createSlotForCandidate } = require("../utils/slotScheduling");
+
 const httpStatus = require("../constants/httpStatus");
 
 const createJob = catchAsync(async (req, res, next) => {
@@ -270,7 +272,7 @@ const closeJob = catchAsync(async (req, res, next) => {
 
 const scheduleApplicantInterview = catchAsync(async (req, res, next) => {
   const { appId } = req.params;
-  const { slotId } = req.body;
+  const { startTime, endTime } = req.body;
 
   const application = await JobApplication.findById(appId)
     .populate("job")
@@ -283,14 +285,6 @@ const scheduleApplicantInterview = catchAsync(async (req, res, next) => {
       new AppError(
         "Not authorized to schedule this application",
         httpStatus.FORBIDDEN,
-      ),
-    );
-  }
-  if (application.job.isActive) {
-    return next(
-      new AppError(
-        "Close the job before scheduling interviews",
-        httpStatus.BAD_REQUEST,
       ),
     );
   }
@@ -311,52 +305,23 @@ const scheduleApplicantInterview = catchAsync(async (req, res, next) => {
     );
   }
 
-  const slot = await Slot.findOneAndUpdate(
-    { _id: slotId, slotStatus: "open" },
-    {
-      slotStatus: "booked",
-      booking: application.applicant._id,
-      job: application.job._id,
-      name: application.applicant.name,
-      contactEmail: req.user.email,
-    },
-    { new: true },
-  );
-
-  if (!slot) {
-    return next(
-      new AppError("Selected slot is no longer available", httpStatus.CONFLICT),
-    );
-  }
+  const slot = await createSlotForCandidate({
+    applicantId: application.applicant._id,
+    applicantName: application.applicant.name,
+    applicantEmail: application.applicant.email,
+    jobId: application.job._id,
+    jobTitle: application.job.title,
+    jobCompany: application.job.company,
+    jobTrack: application.job.track,
+    round: "screening",
+    previousRoundSlotId: null,
+    startTime,
+    endTime,
+    contactEmail: req.user.email,
+  });
 
   application.scheduledSlot = slot._id;
   await application.save();
-
-  const formatDate = (d) => new Date(d).toLocaleDateString("en-GB");
-  const formatTime = (d) =>
-    new Date(d).toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
-
-  const interviewLink = `${process.env.CLIENT_URL}/interview/${slot._id}`;
-  try {
-    await transporter.sendMail({
-      from: process.env.MAIL_USER,
-      to: application.applicant.email,
-      subject: `Interview Scheduled — ${application.job.title}`,
-      html: `
-        <p>Congratulations! You've been shortlisted for <strong>${application.job.title}</strong> at ${application.job.company}.</p>
-        <p>Your interview is scheduled for <strong>${formatDate(slot.startTime)} from ${formatTime(slot.startTime)} to ${formatTime(slot.endTime)}</strong>.</p>
-        <p><a href="${interviewLink}">Join Interview</a></p>
-      `,
-    });
-  } catch (mailErr) {
-    logger.error(
-      `Failed to send interview email to ${application.applicant.email}: ${mailErr.message}`,
-    );
-  }
 
   res
     .status(httpStatus.OK)

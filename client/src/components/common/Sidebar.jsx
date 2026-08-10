@@ -45,7 +45,6 @@ export default function Sidebar({ isOpen, onClose }) {
       { to: "/hr/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { to: "/hr/job-postings", label: "Job Postings", icon: Briefcase },
       { to: "/hr/applications", label: "Applications", icon: ClipboardList },
-      { to: "/hr/slots", label: "Interview Slots", icon: CalendarClock },
       { to: "/hr/interviews", label: "Interviews", icon: CalendarCheck },
     ],
     admin: [

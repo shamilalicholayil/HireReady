@@ -1,38 +1,23 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { fetchMySlots, scheduleNextRound } from "../../api/slotApi";
-
-const ROUNDS = ["technical", "managerial", "hr_final"];
-
-const formatSlotOption = (slot) => {
-  const start = new Date(slot.startTime);
-  const end = new Date(slot.endTime);
-  return `${start.toLocaleDateString("en-GB")} — ${start.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })} to ${end.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}`;
-};
+import { scheduleNextRound } from "../../api/slotApi";
 
 const NextRoundButton = ({ slot, onScheduled }) => {
   const [open, setOpen] = useState(false);
-  const [openSlots, setOpenSlots] = useState([]);
-  const [selectedSlot, setSelectedSlot] = useState("");
-  const [round, setRound] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (!open) return;
-    setLoading(true);
-    fetchMySlots({ track: slot.track, status: "open" })
-      .then(({ data }) => setOpenSlots(data.data.slots))
-      .catch(() => toast.error("Failed to load open slots."))
-      .finally(() => setLoading(false));
-  }, [open, slot.track]);
-
   const handleSchedule = async () => {
-    if (!selectedSlot || !round) return;
+    if (!startTime || !endTime) return;
+    if (new Date(startTime) >= new Date(endTime)) {
+      toast.error("Start time must be before end time.");
+      return;
+    }
     setSubmitting(true);
     try {
-      const { data } = await scheduleNextRound(slot._id, selectedSlot, round);
+      const { data } = await scheduleNextRound(slot._id, startTime, endTime);
       toast.success("Next round scheduled.");
       onScheduled(data.data.nextSlot);
       setOpen(false);
@@ -55,36 +40,22 @@ const NextRoundButton = ({ slot, onScheduled }) => {
 
   return (
     <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-      <select
-        value={round}
-        onChange={(e) => setRound(e.target.value)}
-        className="rounded-lg border border-[var(--border)] bg-[var(--background)] p-2 text-sm text-[var(--text-primary)] sm:w-40"
-      >
-        <option value="">Round</option>
-        {ROUNDS.map((r) => (
-          <option key={r} value={r}>
-            {r.replace("_", " ")}
-          </option>
-        ))}
-      </select>
-      <select
-        value={selectedSlot}
-        onChange={(e) => setSelectedSlot(e.target.value)}
-        className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] p-2 text-sm text-[var(--text-primary)] sm:w-64"
-      >
-        <option value="">
-          {loading ? "Loading slots..." : "Select a slot"}
-        </option>
-        {openSlots.map((s) => (
-          <option key={s._id} value={s._id}>
-            {formatSlotOption(s)}
-          </option>
-        ))}
-      </select>
+      <input
+        type="datetime-local"
+        value={startTime}
+        onChange={(e) => setStartTime(e.target.value)}
+        className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] p-2 text-sm text-[var(--text-primary)] sm:w-48"
+      />
+      <input
+        type="datetime-local"
+        value={endTime}
+        onChange={(e) => setEndTime(e.target.value)}
+        className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] p-2 text-sm text-[var(--text-primary)] sm:w-48"
+      />
       <div className="flex gap-2">
         <Button
           className="flex-1 sm:flex-none"
-          disabled={!selectedSlot || !round || submitting}
+          disabled={!startTime || !endTime || submitting}
           onClick={handleSchedule}
         >
           {submitting ? "Scheduling..." : "Confirm"}
