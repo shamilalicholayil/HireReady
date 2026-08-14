@@ -6,11 +6,13 @@ const Question = require("../models/Question");
 const httpStatus = require("../constants/httpStatus");
 
 const createQuestion = catchAsync(async (req, res, next) => {
-  const { question, track, difficulty, topics, answerKeyPoints } = req.body;
+  const { question, track, stack, difficulty, topics, answerKeyPoints } =
+    req.body;
 
   const newQuestion = await Question.create({
     question,
     track,
+    stack,
     difficulty,
     topics,
     answerKeyPoints,
@@ -71,13 +73,22 @@ const getQuestionById = catchAsync(async (req, res, next) => {
 });
 
 const updateQuestion = catchAsync(async (req, res, next) => {
-  const { question, track, difficulty, topics, answerKeyPoints } = req.body;
+  const { question, track, stack, difficulty, topics, answerKeyPoints } =
+    req.body;
 
-  const updated = await Question.findByIdAndUpdate(
-    req.params.id,
-    { question, track, difficulty, topics, answerKeyPoints },
-    { new: true, runValidators: true },
-  );
+  const setPayload = { question, track, difficulty, topics, answerKeyPoints };
+  const updateOps = { $set: setPayload };
+
+  if (track === "dsa") {
+    updateOps.$unset = { stack: "" };
+  } else {
+    setPayload.stack = stack;
+  }
+
+  const updated = await Question.findByIdAndUpdate(req.params.id, updateOps, {
+    new: true,
+    runValidators: true,
+  });
 
   if (!updated)
     return next(new AppError("Question not found.", httpStatus.NOT_FOUND));

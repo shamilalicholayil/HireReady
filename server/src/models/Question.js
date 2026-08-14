@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
 
+const { TRACK_STACK_MAP } = require("../constants/trackStack");
+
 const questionSchema = new mongoose.Schema(
   {
     question: {
@@ -8,7 +10,22 @@ const questionSchema = new mongoose.Schema(
     },
     track: {
       type: String,
-      enum: ["frontend", "backend", "dsa", "hr", "fullstack"],
+      enum: ["frontend", "backend", "dsa", "fullstack"],
+      required: true,
+    },
+    stack: {
+      type: String,
+      required: function () {
+        return this.track !== "dsa";
+      },
+      validate: {
+        validator: function (value) {
+          if (this.track === "dsa") return value === undefined;
+          return TRACK_STACK_MAP[this.track]?.includes(value);
+        },
+        message: (props) =>
+          `"${props.value}" is not a valid stack for this track`,
+      },
     },
     difficulty: {
       type: String,
