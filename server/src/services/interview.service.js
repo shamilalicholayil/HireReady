@@ -12,6 +12,8 @@ const GEMINI_MODEL_FLASH = process.env.GEMINI_MODEL_FLASH || "gemini-3.6-flash";
 const GEMINI_MODEL_PRO =
   process.env.GEMINI_MODEL_PRO || "gemini-3.1-pro-preview";
 
+const MASTERY_SCORE_THRESHOLD = 50;
+
 const withRetry = async (fn, retries = 3, delayMs = 1000) => {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
@@ -37,14 +39,16 @@ const withRetry = async (fn, retries = 3, delayMs = 1000) => {
  * combined in one Gemini call, so this step returns plain text context,
  * consumed by step 2 below.
  */
-const gatherCandidateContext = async ({ userId, track }) => {
+const gatherCandidateContext = async ({ userId, track, stack }) => {
   const mcpClient = await getMcpClient();
+
+  const stackLine = stack ? ` (specifically the ${stack} stack)` : "";
 
   const response = await withRetry(() =>
     ai.models.generateContent({
       model: GEMINI_MODEL_FLASH,
       contents: `Use the available tools to look up the candidate's profile and past interview performance for userId "${userId}".
-Then write a short (2-3 sentence) summary of their skill level and background relevant to the "${track}" track, to help calibrate interview question difficulty and focus.`,
+Then write a short (2-3 sentence) summary of their skill level and background relevant to the "${track}" track${stackLine}, to help calibrate interview question difficulty and focus.`,
       config: {
         tools: [mcpToTool(mcpClient)],
       },
@@ -60,12 +64,24 @@ Then write a short (2-3 sentence) summary of their skill level and background re
  * Question bank with source: "AI" so future sessions can reuse them
  * without another API call.
  */
-const generateQuestions = async ({ userId, track, difficulty, count }) => {
-  const candidateContext = await gatherCandidateContext({ userId, track });
+const generateQuestions = async ({
+  userId,
+  track,
+  stack,
+  difficulty,
+  count,
+}) => {
+  const candidateContext = await gatherCandidateContext({
+    userId,
+    track,
+    stack,
+  });
+
+  const stackLine = stack ? ` using ${stack}` : "";
 
   const prompt = `Candidate context: ${candidateContext}
 
-Generate ${count} unique technical interview questions for a ${difficulty}-level candidate on the ${track} track, tailored to the candidate context above where relevant.
+Generate ${count} unique technical interview questions for a ${difficulty}-level candidate on the ${track} track${stackLine}, tailored to the candidate context above where relevant.
 Each question should test real-world understanding, not trivia.
 For each question, also provide 3-5 key points a strong answer should cover, and 2-4 relevant topic tags.`;
 
@@ -108,6 +124,7 @@ For each question, also provide 3-5 key points a strong answer should cover, and
     parsed.questions.map((q) => ({
       question: q.question,
       track,
+      stack: stack || undefined,
       difficulty,
       topics: q.topics,
       answerKeyPoints: q.answerKeyPoints,
@@ -124,17 +141,29 @@ For each question, also provide 3-5 key points a strong answer should cover, and
  * (zero API cost), only calls Gemini to generate the shortfall.
  * Excludes questions this user has already answered.
  */
-const getQuestionsForSession = async ({ userId, track, difficulty, count }) => {
-  const answeredQuestionIds = await Answer.find({ user: userId })
+const getQuestionsForSession = async ({
+  userId,
+  track,
+  stack,
+  difficulty,
+  count,
+}) => {
+  const answeredQuestionIds = await Answer.find({
+    user: userId,
+    score: { $gte: MASTERY_SCORE_THRESHOLD },
+  })
     .distinct("question")
     .then((ids) => ids.filter(Boolean));
 
-  const existing = await Question.find({
+  const filter = {
     track,
     difficulty,
     isActive: true,
     _id: { $nin: answeredQuestionIds },
-  }).limit(count);
+  };
+  if (stack) filter.stack = stack;
+
+  const existing = await Question.find(filter).limit(count);
 
   if (existing.length >= count) {
     return existing.slice(0, count);
@@ -144,6 +173,7 @@ const getQuestionsForSession = async ({ userId, track, difficulty, count }) => {
   const generated = await generateQuestions({
     userId,
     track,
+    stack,
     difficulty,
     count: shortfall,
   });

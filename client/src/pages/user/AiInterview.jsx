@@ -44,17 +44,24 @@ export default function AiInterview() {
   } = useSelector((state) => state.interview);
 
   const [track, setTrack] = useState(TRACKS[0]);
+  const [stack, setStack] = useState(null);
   const [difficulty, setDifficulty] = useState(DIFFICULTIES[0]);
   const [userAnswer, setUserAnswer] = useState("");
   const [questionStartedAt, setQuestionStartedAt] = useState(null);
   const [answerType, setAnswerType] = useState("text");
   const [questionKey, setQuestionKey] = useState(0);
 
+  const handleSetTrack = (nextTrack) => {
+    setTrack(nextTrack);
+    setStack(null);
+  };
+
   const handleStart = async () => {
     dispatch(setStatus("starting"));
     try {
       const { data } = await startInterviewSession({
         track,
+        stack: track === "dsa" ? undefined : stack,
         difficulty,
       });
       dispatch(startInterview(data));
@@ -137,12 +144,29 @@ export default function AiInterview() {
     return (
       <InterviewStart
         track={track}
-        setTrack={setTrack}
+        setTrack={handleSetTrack}
+        stack={stack}
+        setStack={setStack}
         difficulty={difficulty}
         setDifficulty={setDifficulty}
         handleStart={handleStart}
         error={error}
       />
+    );
+  }
+
+  if (status === "starting") {
+    return (
+      <div className="mx-auto max-w-2xl flex flex-col items-center justify-center gap-4 p-4 sm:p-6 min-h-[60vh] text-center">
+        <div className="h-10 w-10 rounded-full border-2 border-indigo-400 border-t-transparent animate-spin" />
+        <p className="text-lg font-semibold">
+          Generating your interview questions...
+        </p>
+        <p className="text-sm text-slate-400">
+          Tailoring questions to {track}
+          {stack ? ` · ${stack}` : ""} · {difficulty}
+        </p>
+      </div>
     );
   }
 
@@ -164,7 +188,7 @@ export default function AiInterview() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-4 sm:p-6 pb-0">
-      <InterviewHeader track={track} difficulty={difficulty} />
+      <InterviewHeader track={track} stack={stack} difficulty={difficulty} />
 
       <div className="space-y-6">
         {isFollowUp && (

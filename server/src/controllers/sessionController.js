@@ -5,7 +5,7 @@ const Session = require("../models/Session.js");
 const httpStatus = require("../constants/httpStatus.js");
 
 const createSession = catchAsync(async (req, res, next) => {
-  const { track, difficulty, type } = req.body;
+  const { track, stack, difficulty, type } = req.body;
 
   if (!track || !difficulty) {
     return next(
@@ -13,9 +13,16 @@ const createSession = catchAsync(async (req, res, next) => {
     );
   }
 
+  if (track !== "dsa" && !stack) {
+    return next(
+      new AppError("stack is required for this track", httpStatus.BAD_REQUEST),
+    );
+  }
+
   const session = await Session.create({
     user: req.user._id,
     track,
+    stack: track === "dsa" ? undefined : stack,
     difficulty,
     type: type || "solo",
   });

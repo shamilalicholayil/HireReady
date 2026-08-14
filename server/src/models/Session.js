@@ -8,8 +8,14 @@ const sessionSchema = new mongoose.Schema(
     },
     track: {
       type: String,
-      enum: ["frontend", "backend", "dsa", "hr", "fullstack"],
+      enum: ["frontend", "backend", "dsa", "fullstack"],
       required: true,
+    },
+    stack: {
+      type: String,
+      required: function () {
+        return this.track !== "dsa";
+      },
     },
     difficulty: {
       type: String,

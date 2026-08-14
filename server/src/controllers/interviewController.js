@@ -21,12 +21,19 @@ const QUESTIONS_PER_SESSION = 5;
 const FOLLOW_UP_SCORE_THRESHOLD = 50;
 
 const startSession = catchAsync(async (req, res, next) => {
-  const { track, difficulty } = req.body;
+  const { track, stack, difficulty } = req.body;
   const userId = req.user._id;
+
+  if (track !== "dsa" && !stack) {
+    return next(
+      new AppError("stack is required for this track", httpStatus.BAD_REQUEST),
+    );
+  }
 
   const questions = await getQuestionsForSession({
     userId,
     track,
+    stack: track === "dsa" ? undefined : stack,
     difficulty,
     count: QUESTIONS_PER_SESSION,
   });
@@ -34,7 +41,7 @@ const startSession = catchAsync(async (req, res, next) => {
   if (!questions.length) {
     return next(
       new AppError(
-        "No questions available for this track/difficulty.",
+        "No questions available for this track/stack/difficulty.",
         httpStatus.NOT_FOUND,
       ),
     );
@@ -43,6 +50,7 @@ const startSession = catchAsync(async (req, res, next) => {
   const session = await Session.create({
     user: userId,
     track,
+    stack: track === "dsa" ? undefined : stack,
     difficulty,
     type: "solo",
   });
