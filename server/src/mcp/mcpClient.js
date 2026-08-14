@@ -12,6 +12,7 @@ const getMcpClient = () => {
       const transport = new StdioClientTransport({
         command: "node",
         args: [path.join(__dirname, "interviewMcpServer.js")],
+        env: process.env,
       });
       const client = new Client({
         name: "hireready-backend",
