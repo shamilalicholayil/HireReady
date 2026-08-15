@@ -12,7 +12,7 @@ const tutorialSchema = new mongoose.Schema(
     },
     track: {
       type: String,
-      enum: ["frontend", "backend", "dsa", "hr", "fullstack"],
+      enum: ["frontend", "backend", "dsa", "fullstack"],
     },
     description: {
       type: String,
